@@ -9,9 +9,9 @@ import (
 	"net/mail"
 	"strings"
 
-	"cgin/internal/enum"
-	"cgin/internal/user"
-	"cgin/pkg/excel"
+	"cfiber/internal/enum"
+	"cfiber/internal/user"
+	"cfiber/pkg/excel"
 )
 
 const (

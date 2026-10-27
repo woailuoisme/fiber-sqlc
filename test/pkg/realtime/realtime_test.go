@@ -17,8 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/pkg/realtime"
+	"cfiber/internal/config"
+	"cfiber/pkg/realtime"
 )
 
 const testSecret = "centrifugo-test-secret-key-12345"

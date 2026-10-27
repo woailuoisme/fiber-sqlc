@@ -12,9 +12,9 @@ type MailConfig struct {
 	// Driver 邮件发送驱动 (mailpit: 本地开发与测试, resend: 现代化云端发信)
 	Driver string `env:"MAIL_DRIVER" envDefault:"mailpit"`
 	// FromAddress 发件人邮箱地址
-	FromAddress string `env:"MAIL_FROM_ADDRESS" envDefault:"no-reply@cgin.local"`
+	FromAddress string `env:"MAIL_FROM_ADDRESS" envDefault:"no-reply@cfiber.local"`
 	// FromName 发件人展示名称
-	FromName string `env:"MAIL_FROM_NAME" envDefault:"cgin"`
+	FromName string `env:"MAIL_FROM_NAME" envDefault:"cfiber"`
 
 	// Mailpit 驱动配置 (本地开发)
 	Mailpit MailpitConfig

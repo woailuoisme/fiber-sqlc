@@ -15,9 +15,9 @@ import (
 	"github.com/samber/oops"
 	gomail "github.com/wneessen/go-mail"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // mailpitDriver 基于 wneessen/go-mail 实现的 Mailpit 本地测试发信驱动。

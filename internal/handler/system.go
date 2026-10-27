@@ -9,10 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 
-	"cgin/internal/service"
-	"cgin/pkg/logger"
-	"cgin/pkg/ready"
-	"cgin/pkg/response"
+	"cfiber/internal/service"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/ready"
+	"cfiber/pkg/response"
 )
 
 // probeTimeout 是就绪探针调度的总超时时限。

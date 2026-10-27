@@ -4,8 +4,8 @@ package adminroute
 import (
 	"github.com/gin-gonic/gin"
 
-	adminhandler "cgin/internal/handler/admin"
-	"cgin/internal/middleware"
+	adminhandler "cfiber/internal/handler/admin"
+	"cfiber/internal/middleware"
 )
 
 // RegisterAdminAuthRoutes 注册后台管理员认证端点（/v1/admin/auth/*）。

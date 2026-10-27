@@ -13,14 +13,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/handler"
-	"cgin/internal/middleware/global"
-	"cgin/internal/route"
-	"cgin/internal/service"
-	"cgin/pkg/logger"
-	platformPayment "cgin/pkg/payment"
-	"cgin/pkg/payment/enum"
+	"cfiber/internal/config"
+	"cfiber/internal/handler"
+	"cfiber/internal/middleware/global"
+	"cfiber/internal/route"
+	"cfiber/internal/service"
+	"cfiber/pkg/logger"
+	platformPayment "cfiber/pkg/payment"
+	"cfiber/pkg/payment/enum"
 )
 
 // setupPaymentTest 构造测试用的 Gin 引擎、服务实例与 Fake 支付管理器。

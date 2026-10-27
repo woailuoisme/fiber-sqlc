@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
+	"cfiber/internal/config"
 )
 
 // setBaseValidEnv 注入一组可通过校验的最小环境变量，供各用例按需覆盖单项。

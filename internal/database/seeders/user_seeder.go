@@ -12,12 +12,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/samber/lo"
 
-	"cgin/internal/config"
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/pkg/hasher"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/pkg/hasher"
+	"cfiber/pkg/logger"
 )
 
 // FixturePassword 是本地开发演示账号统一使用的明文口令。

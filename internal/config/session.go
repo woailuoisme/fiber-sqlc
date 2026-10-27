@@ -21,7 +21,7 @@ const defaultSessionMaxAge = 7 * 24 * time.Hour
 // 非生产环境缺省时由 validateSession 生成一次性随机密钥并打警告，杜绝静态弱密钥。
 type SessionConfig struct {
 	// Name 是会话 Cookie 名称。
-	Name string `env:"SESSION_NAME" envDefault:"cgin_session"`
+	Name string `env:"SESSION_NAME" envDefault:"cfiber_session"`
 	// Secret 是会话签名密钥；生产必填，长度不低于 SessionSecretMinLength。
 	Secret string `env:"SESSION_SECRET"`
 	// MaxAge 是会话有效期。

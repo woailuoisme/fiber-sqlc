@@ -15,10 +15,10 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
-	"cgin/pkg/payment/enum"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/payment/enum"
 )
 
 // FakeApplicationKey 是本地开发与端到端演练下 Fake 渠道使用的应用标识。

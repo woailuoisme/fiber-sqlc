@@ -6,11 +6,11 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
-	"cgin/internal/bootstrap"
-	"cgin/internal/config"
-	"cgin/internal/console/core"
-	"cgin/internal/database"
-	"cgin/pkg/logger"
+	"cfiber/internal/bootstrap"
+	"cfiber/internal/config"
+	"cfiber/internal/console/core"
+	"cfiber/internal/database"
+	"cfiber/pkg/logger"
 )
 
 // ValidationError 表示控制台命令参数校验失败的强类型错误。

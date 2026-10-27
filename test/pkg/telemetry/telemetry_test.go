@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/pkg/telemetry"
+	"cfiber/internal/config"
+	"cfiber/pkg/telemetry"
 )
 
 func TestTelemetry_Disabled(t *testing.T) {
@@ -18,7 +18,7 @@ func TestTelemetry_Disabled(t *testing.T) {
 		Enabled: false,
 	}
 
-	shutdown, err := telemetry.Init(context.Background(), cfg, "cgin", "test", "v1.0.0")
+	shutdown, err := telemetry.Init(context.Background(), cfg, "cfiber", "test", "v1.0.0")
 	require.NoError(t, err)
 	require.NotNil(t, shutdown)
 
@@ -33,7 +33,7 @@ func TestTelemetry_Disabled(t *testing.T) {
 	meter := telemetry.Meter("test")
 	assert.NotNil(t, meter)
 
-	hook := telemetry.NewZerologHook("cgin", zerolog.InfoLevel)
+	hook := telemetry.NewZerologHook("cfiber", zerolog.InfoLevel)
 	assert.Nil(t, hook)
 }
 
@@ -44,7 +44,7 @@ func TestTelemetryConfig_Helpers(t *testing.T) {
 
 		emptyCfg := config.TelemetryConfig{}
 		assert.Equal(t, "fallback", emptyCfg.EffectiveServiceName("fallback"))
-		assert.Equal(t, "cgin", emptyCfg.EffectiveServiceName(""))
+		assert.Equal(t, "cfiber", emptyCfg.EffectiveServiceName(""))
 	})
 
 	t.Run("EffectiveEndpoint", func(t *testing.T) {

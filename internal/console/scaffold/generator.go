@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/template"
 
-	"cgin/internal/console/scaffold/stubs"
+	"cfiber/internal/console/scaffold/stubs"
 )
 
 // GeneratorOptions 封装了代码生成器的入参配置。
@@ -149,9 +149,9 @@ func BuildTemplateData(opts GeneratorOptions) TemplateData {
 	return TemplateData{
 		ModuleFile:        moduleFile,
 		LayerDir:          scopePrefix,
-		DTOImportPath:     filepath.Join("cgin", "internal", "dto", scopePrefix),
-		HandlerImportPath: filepath.Join("cgin", "internal", "handler", scopePrefix),
-		ServiceImportPath: filepath.Join("cgin", "internal", "service", scopePrefix),
+		DTOImportPath:     filepath.Join("cfiber", "internal", "dto", scopePrefix),
+		HandlerImportPath: filepath.Join("cfiber", "internal", "handler", scopePrefix),
+		ServiceImportPath: filepath.Join("cfiber", "internal", "service", scopePrefix),
 		RoutesPath:        routesPath,
 		DTOPackage:        dtoPackage,
 		HandlerPackage:    handlerPackage,

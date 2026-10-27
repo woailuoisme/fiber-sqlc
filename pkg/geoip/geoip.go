@@ -15,8 +15,8 @@ import (
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 	"github.com/rs/zerolog"
 
-	"cgin/internal/config"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/pkg/logger"
 )
 
 const (

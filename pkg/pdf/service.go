@@ -22,8 +22,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/internal/config"
-	"cgin/pkg/storage"
+	"cfiber/internal/config"
+	"cfiber/pkg/storage"
 )
 
 // Service 统一管理 PDF 文档的排版、渲染与多通道交付。

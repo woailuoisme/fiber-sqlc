@@ -10,8 +10,8 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/notification/channel/gotify"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/notification/channel/gotify"
 )
 
 const (

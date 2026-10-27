@@ -13,11 +13,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/pkg/i18n"
-	"cgin/pkg/pdf"
-	"cgin/pkg/pdf/template"
-	"cgin/pkg/storage"
+	"cfiber/internal/config"
+	"cfiber/pkg/i18n"
+	"cfiber/pkg/pdf"
+	"cfiber/pkg/pdf/template"
+	"cfiber/pkg/storage"
 )
 
 type simpleTestDoc struct {

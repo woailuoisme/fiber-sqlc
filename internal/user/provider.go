@@ -8,15 +8,15 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/pkg/authentication"
-	"cgin/pkg/hasher"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/hasher"
 )
 
 // dummyPasswordHash 是时序对齐用的固定哈希载荷，进程内只生成一次。
 var dummyPasswordHash = sync.OnceValue(func() string {
-	encoded, err := hasher.New().Make("cgin-login-timing-equaliser")
+	encoded, err := hasher.New().Make("cfiber-login-timing-equaliser")
 	if err != nil {
 		return ""
 	}

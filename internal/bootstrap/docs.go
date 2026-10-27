@@ -8,7 +8,7 @@ import (
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-gonic/gin"
 
-	"cgin/shared/apidocs"
+	"cfiber/shared/apidocs"
 )
 
 // 文档页面与 OpenAPI 规范路由路径常量。
@@ -25,8 +25,8 @@ const (
 )
 
 var (
-	clientReferencePage = []byte(buildReferencePage("cgin API", referenceSpecPath))
-	adminReferencePage  = []byte(buildReferencePage("cgin Admin API", adminReferenceSpecPath))
+	clientReferencePage = []byte(buildReferencePage("cfiber API", referenceSpecPath))
+	adminReferencePage  = []byte(buildReferencePage("cfiber Admin API", adminReferenceSpecPath))
 )
 
 // buildReferencePage 构建 Scalar API Reference 的宿主 HTML 页。

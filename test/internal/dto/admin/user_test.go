@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	admindto "cgin/internal/dto/admin"
-	"cgin/internal/user"
+	admindto "cfiber/internal/dto/admin"
+	"cfiber/internal/user"
 )
 
 // api.md 6.1 规定的分页默认值与上限。

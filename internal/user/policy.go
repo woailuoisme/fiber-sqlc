@@ -4,10 +4,10 @@ import (
 	"context"
 	"slices"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/pkg/authentication"
-	"cgin/pkg/errs"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/errs"
 )
 
 // ErrRoleRestricted 声明非目标角色访问受限错误（403 Forbidden）。

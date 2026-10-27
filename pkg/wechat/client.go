@@ -13,9 +13,9 @@ import (
 	"github.com/go-resty/resty/v2"
 	"golang.org/x/sync/singleflight"
 
-	"cgin/internal/config"
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
 )
 
 const (

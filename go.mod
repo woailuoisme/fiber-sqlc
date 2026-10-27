@@ -1,4 +1,4 @@
-module cgin
+module cfiber
 
 go 1.27.3
 

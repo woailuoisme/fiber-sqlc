@@ -8,11 +8,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/pkg/authentication"
-	"cgin/pkg/errs"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/errs"
 )
 
 // 唯一索引名，用于把冲突翻译成具体业务错误码。

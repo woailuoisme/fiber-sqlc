@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"cgin/pkg/ready"
+	"cfiber/pkg/ready"
 )
 
 // 组件名定义，对齐 ready 标准组件常量，对应就绪响应 checks 键名与链路日志。

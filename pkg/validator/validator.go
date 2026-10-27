@@ -24,8 +24,8 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	govalidator "github.com/go-playground/validator/v10"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/i18n"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/i18n"
 )
 
 // Validatable 是支持 DTO 自校验与跨字段复合校验的接口契约。
@@ -238,7 +238,7 @@ var reservedShortNames = map[string]struct{}{
 	"system": {},
 	"me":     {},
 	"api":    {},
-	"cgin":   {},
+	"cfiber":   {},
 }
 
 // validateUsernameSlug 校验用户名的字符集。前置长度守卫（1-64 字符），防御恶意超长串造成正则回溯。

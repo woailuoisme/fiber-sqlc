@@ -6,12 +6,12 @@ import (
 
 	"github.com/samber/lo"
 
-	"cgin/internal/database/sqlc"
-	admindto "cgin/internal/dto/admin"
-	"cgin/internal/enum"
-	"cgin/internal/export"
-	"cgin/internal/user"
-	"cgin/pkg/response"
+	"cfiber/internal/database/sqlc"
+	admindto "cfiber/internal/dto/admin"
+	"cfiber/internal/enum"
+	"cfiber/internal/export"
+	"cfiber/internal/user"
+	"cfiber/pkg/response"
 )
 
 // userStore 声明后台用户管理所需的用户读写能力（接口由消费方定义）。

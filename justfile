@@ -1,4 +1,4 @@
-# cgin 常用工程任务
+# cfiber 常用工程任务
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set dotenv-load := true
@@ -44,13 +44,13 @@ init *ARGS:
 free-port port="":
     @port="{{port}}"; port="${port:-${APP_PORT:-3300}}"; pids=$(lsof -ti tcp:$port -sTCP:LISTEN || true); if [ -z "$pids" ]; then echo "端口 $port 空闲"; else echo "端口 $port 被占用（PID $(echo $pids)），结束它"; kill $pids 2>/dev/null || true; sleep 1; kill -9 $(lsof -ti tcp:$port -sTCP:LISTEN 2>/dev/null || true) 2>/dev/null || true; echo "端口 $port 已释放"; fi
 
-# 编译到 bin/cgin
+# 编译到 bin/cfiber
 build:
     go build -trimpath \
         -ldflags "-X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo dev) \
                   -X main.commit=$(git rev-parse --short HEAD 2>/dev/null || echo none) \
                   -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        -o bin/cgin ./cmd/api
+        -o bin/cfiber ./cmd/api
 
 # 整理 go.mod
 tidy:
@@ -113,7 +113,7 @@ alias wrk := bench
 migrate:
     atlas migrate apply --env app
 
-# 应用未执行的 Atlas 迁移至测试库（cgin_test）
+# 应用未执行的 Atlas 迁移至测试库（cfiber_test）
 migrate-test:
     atlas migrate apply --env test
 

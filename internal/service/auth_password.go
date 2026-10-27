@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/dto"
-	"cgin/internal/event"
-	"cgin/internal/notification"
-	appuser "cgin/internal/user"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/dto"
+	"cfiber/internal/event"
+	"cfiber/internal/notification"
+	appuser "cfiber/internal/user"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // ChangePassword 校验当前口令后写入新口令。

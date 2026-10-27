@@ -10,9 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"cgin/internal/console/core"
-	"cgin/internal/database"
-	"cgin/internal/database/seeders"
+	"cfiber/internal/console/core"
+	"cfiber/internal/database"
+	"cfiber/internal/database/seeders"
 )
 
 // DBMigrateOptions 封装 db:migrate 命令的参数与依赖容器。
@@ -95,7 +95,7 @@ func (o *DBSeedOptions) Run(ctx context.Context) error {
 	streams := o.Factory.IOStreams()
 
 	if o.Fresh && !o.Force {
-		appName := "cgin"
+		appName := "cfiber"
 		if cfg, err := o.Factory.Config(); err == nil && cfg != nil && cfg.App.Name != "" {
 			appName = cfg.App.Name
 		} else if err != nil {

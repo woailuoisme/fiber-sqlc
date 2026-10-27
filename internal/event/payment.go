@@ -3,8 +3,8 @@ package event
 import (
 	"time"
 
-	platformPayment "cgin/pkg/payment"
-	"cgin/pkg/payment/enum"
+	platformPayment "cfiber/pkg/payment"
+	"cfiber/pkg/payment/enum"
 )
 
 // PaymentSucceededEvent 在支付渠道异步通知验签通过且确认收款成功后广播。

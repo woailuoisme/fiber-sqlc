@@ -11,8 +11,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/pkg/i18n"
-	"cgin/pkg/pdf"
+	"cfiber/pkg/i18n"
+	"cfiber/pkg/pdf"
 )
 
 // InvoiceItem 描述发票/账单明细清单项。

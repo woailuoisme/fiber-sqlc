@@ -16,8 +16,8 @@ import (
 	"github.com/redis/rueidis"
 	"golang.org/x/sync/singleflight"
 
-	"cgin/internal/config"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/pkg/logger"
 )
 
 const (

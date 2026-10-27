@@ -14,11 +14,11 @@ import (
 	"github.com/samber/oops"
 	"golang.org/x/sync/errgroup"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
-	"cgin/pkg/notification/async"
-	"cgin/pkg/notification/contract"
-	"cgin/pkg/queue"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/notification/async"
+	"cfiber/pkg/notification/contract"
+	"cfiber/pkg/queue"
 )
 
 // defaultParallelTargets 是并行投递单个通知时的最大并发接收者数。

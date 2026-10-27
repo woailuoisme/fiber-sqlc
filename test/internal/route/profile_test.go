@@ -16,15 +16,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/dto"
-	"cgin/internal/enum"
-	"cgin/internal/handler"
-	"cgin/internal/media"
-	"cgin/internal/service"
-	"cgin/internal/user"
-	"cgin/pkg/authentication"
-	"cgin/pkg/errs"
-	"cgin/pkg/validator"
+	"cfiber/internal/dto"
+	"cfiber/internal/enum"
+	"cfiber/internal/handler"
+	"cfiber/internal/media"
+	"cfiber/internal/service"
+	"cfiber/internal/user"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/validator"
 )
 
 // TestMain 安装校验器：本包通过 gin 绑定驱动多部分表单与 JSON。
@@ -47,7 +47,7 @@ func TestUpdateProfileRequestShape(t *testing.T) {
 		"username":"alice_01",
 		"displayUsername":"Alice",
 		"phoneNumber":"+8613800138000",
-		"email":"should-be-ignored@cgin.local",
+		"email":"should-be-ignored@cfiber.local",
 		"role":"admin"
 	}`), &request))
 

@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/pkg/search"
+	"cfiber/internal/config"
+	"cfiber/pkg/search"
 )
 
 // SampleHit 定义测试用强类型搜索结果文档结构。

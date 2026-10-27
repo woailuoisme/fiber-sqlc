@@ -5,7 +5,7 @@ import (
 
 	"github.com/aarondl/opt/omitnull"
 
-	"cgin/internal/user"
+	"cfiber/internal/user"
 )
 
 // ProfileResource 为用户内核档案视图的类型别名（供 Swagger 注解直接引用）。

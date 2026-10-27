@@ -18,7 +18,7 @@ import (
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/trace"
 
-	"cgin/internal/config"
+	"cfiber/internal/config"
 )
 
 // requestIDKey 是请求标识在 context 中的私有键。

@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"cgin/internal/config"
-	"cgin/internal/middleware/global"
+	"cfiber/internal/config"
+	"cfiber/internal/middleware/global"
 )
 
 // TestCORS_OptionsPreflightShortCircuit 验证 OPTIONS 预检请求返回 204 并且直接短路阻断后续中间件与路由。
@@ -33,7 +33,7 @@ func TestCORS_OptionsPreflightShortCircuit(t *testing.T) {
 	})
 
 	req := httptest.NewRequest(http.MethodOptions, "/api/test", nil)
-	req.Host = "api.cgin.com"
+	req.Host = "api.cfiber.com"
 	req.Header.Set("Origin", "https://example.com")
 	req.Header.Set("Access-Control-Request-Method", "POST")
 	w := httptest.NewRecorder()

@@ -3,7 +3,7 @@ package database
 import (
 	"time"
 
-	"cgin/internal/database/sqlc"
+	"cfiber/internal/database/sqlc"
 )
 
 // Media 是 media 表生成类型的语义别名。

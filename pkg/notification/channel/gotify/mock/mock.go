@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"cgin/pkg/notification/channel/gotify"
+	"cfiber/pkg/notification/channel/gotify"
 )
 
 // Driver 内存记录型 Gotify 驱动。

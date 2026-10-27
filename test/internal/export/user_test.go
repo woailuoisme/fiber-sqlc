@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/internal/export"
-	"cgin/internal/import"
-	"cgin/internal/user"
-	"cgin/pkg/errs"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/internal/export"
+	"cfiber/internal/import"
+	"cfiber/internal/user"
+	"cfiber/pkg/errs"
 )
 
 func TestUserExportAndImportRoundTrip(t *testing.T) {

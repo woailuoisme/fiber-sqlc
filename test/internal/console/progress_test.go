@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"cgin/internal/console/core"
+	"cfiber/internal/console/core"
 )
 
 // TestProgressBar_Interactive_Records 验证交互模式下普通记录计数进度条的渲染输出。

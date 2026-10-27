@@ -8,13 +8,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"cgin/internal/config"
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/pkg/hasher"
-	"cgin/pkg/logger"
-	"cgin/pkg/validator"
+	"cfiber/internal/config"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/pkg/hasher"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/validator"
 )
 
 // AdminSeeder 负责初始超级管理员账号的幂等播种。

@@ -1,17 +1,17 @@
 // Package middleware 提供按路由/路由组挂载的业务中间件：
 // Throttle（滑动窗口限流）、Auth（JWT 守卫，支持多守卫顺序回退）、Can（Casbin 资源级鉴权）。
 //
-// 全局传输层中间件见子包 cgin/internal/middleware/global。
+// 全局传输层中间件见子包 cfiber/internal/middleware/global。
 package middleware
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 
-	"cgin/internal/config"
-	"cgin/pkg/authentication"
-	"cgin/pkg/authorization"
-	"cgin/pkg/cache"
+	"cfiber/internal/config"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/authorization"
+	"cfiber/pkg/cache"
 )
 
 // Deps 是路由/组中间件所需的依赖，由 bootstrap 装配后注入。

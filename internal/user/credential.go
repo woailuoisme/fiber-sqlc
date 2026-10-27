@@ -7,10 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/pkg/errs"
-	"cgin/pkg/validator"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/validator"
 )
 
 // ErrNoCredential 表示用户没有本地口令凭据。

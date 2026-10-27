@@ -7,7 +7,7 @@ package sqlc
 import (
 	"time"
 
-	"cgin/internal/enum"
+	"cfiber/internal/enum"
 )
 
 type Account struct {

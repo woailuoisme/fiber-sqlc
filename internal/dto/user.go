@@ -3,9 +3,9 @@ package dto
 import (
 	"time"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	appuser "cgin/internal/user"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	appuser "cfiber/internal/user"
 )
 
 // UserResource 是认证端点与管理端用户接口共用的用户档案资源视图。

@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/middleware/global"
-	"cgin/pkg/i18n"
+	"cfiber/internal/config"
+	"cfiber/internal/middleware/global"
+	"cfiber/pkg/i18n"
 )
 
 // TestI18nMiddleware_NegotiationAndMessages 验证 gin-contrib/i18n 多语言协商与文案获取。

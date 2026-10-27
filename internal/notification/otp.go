@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"cgin/pkg/notification"
-	"cgin/pkg/notification/contract"
+	"cfiber/pkg/notification"
+	"cfiber/pkg/notification/contract"
 )
 
 const defaultAuthOTPExpiry = 10 * time.Minute

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"cgin/pkg/cache"
+	"cfiber/pkg/cache"
 )
 
 // Locker 定义分布式互斥锁契约。

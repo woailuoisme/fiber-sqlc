@@ -16,8 +16,8 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
-	"cgin/internal/middleware/global"
-	"cgin/pkg/logger"
+	"cfiber/internal/middleware/global"
+	"cfiber/pkg/logger"
 )
 
 func TestTelemetryMiddleware_Disabled(t *testing.T) {

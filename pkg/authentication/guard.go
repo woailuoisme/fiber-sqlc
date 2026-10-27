@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"cgin/pkg/errs"
+	"cfiber/pkg/errs"
 )
 
 // 守卫常用错误定义。

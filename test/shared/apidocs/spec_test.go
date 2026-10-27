@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/shared/apidocs"
+	"cfiber/shared/apidocs"
 )
 
 // TestClientSpecCoversClientSurfaceOnly 校验客户端规范的收录范围与隔离性。

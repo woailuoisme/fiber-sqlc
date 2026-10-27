@@ -1,8 +1,8 @@
 package user
 
 import (
-	"cgin/internal/database/sqlc"
-	"cgin/pkg/notification/contract"
+	"cfiber/internal/database/sqlc"
+	"cfiber/pkg/notification/contract"
 )
 
 // Notifiable 把用户行适配为通知接收者，路由 mail 与 sms 渠道。

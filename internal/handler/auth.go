@@ -4,11 +4,11 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/dto"
-	"cgin/internal/service"
-	"cgin/pkg/authentication"
-	"cgin/pkg/response"
-	"cgin/pkg/validator"
+	"cfiber/internal/dto"
+	"cfiber/internal/service"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/response"
+	"cfiber/pkg/validator"
 )
 
 // AuthHandler 是认证端点的 HTTP 适配层：只做绑定、取身份、调用服务、写响应。

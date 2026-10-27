@@ -15,8 +15,8 @@ import (
 	"github.com/ThreeDotsLabs/watermill/message/router/middleware"
 	"github.com/rs/zerolog"
 
-	"cgin/internal/config"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/pkg/logger"
 )
 
 var (

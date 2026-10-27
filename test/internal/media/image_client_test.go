@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/media"
+	"cfiber/internal/config"
+	"cfiber/internal/media"
 )
 
 // TestImageClientSeparatesPublicAndInternalURL 验证：

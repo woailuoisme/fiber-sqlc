@@ -6,12 +6,12 @@ import (
 
 	"github.com/aarondl/opt/omitnull"
 
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/internal/user"
-	"cgin/pkg/response"
-	"cgin/pkg/validator"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/internal/user"
+	"cfiber/pkg/response"
+	"cfiber/pkg/validator"
 )
 
 // ValidationOptions 返回用户管理模块贡献给校验器的自定义类型解包函数。

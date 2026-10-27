@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"cgin/internal/middleware/global"
+	"cfiber/internal/middleware/global"
 )
 
 func TestEnforceJSONContentType(t *testing.T) {

@@ -9,11 +9,11 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/config"
+	"cfiber/internal/config"
 )
 
 // DefaultSessionName 是默认 Session Cookie 名称。
-const DefaultSessionName = "cgin_session"
+const DefaultSessionName = "cfiber_session"
 
 // defaultSessionMaxAge 是未配置有效期时的兜底（7 天）。
 const defaultSessionMaxAge = 7 * 24 * time.Hour

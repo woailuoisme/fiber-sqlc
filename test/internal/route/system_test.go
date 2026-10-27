@@ -16,11 +16,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/dto"
-	"cgin/internal/handler"
-	"cgin/internal/route"
-	"cgin/internal/service"
-	"cgin/pkg/logger"
+	"cfiber/internal/dto"
+	"cfiber/internal/handler"
+	"cfiber/internal/route"
+	"cfiber/internal/service"
+	"cfiber/pkg/logger"
 )
 
 // errInternal 模拟底层驱动的真实报错：它带着目标地址与凭据，这类内容绝不能出现在响应体里。

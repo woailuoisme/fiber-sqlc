@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/multitracer"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"cgin/internal/config"
+	"cfiber/internal/config"
 )
 
 // Open 建立 PostgreSQL 连接池并执行连通性探测。

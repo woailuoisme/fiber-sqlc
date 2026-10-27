@@ -16,12 +16,12 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/internal/config"
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
-	"cgin/pkg/storage"
+	"cfiber/internal/config"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/storage"
 )
 
 const (

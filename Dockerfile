@@ -21,7 +21,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
   --mount=type=cache,target=/root/.cache/go-build \
   CGO_ENABLED=0 go build -trimpath \
   -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE} -X main.builtBy=docker" \
-  -o /out/cgin ./cmd/api
+  -o /out/cfiber ./cmd/api
 
 # ==============================================================================
 # 阶段二：生产运行环境 (Alpine 3.24 极致精简镜像)
@@ -35,7 +35,7 @@ RUN apk add --no-cache ca-certificates tzdata \
 WORKDIR /app
 
 # 复制编译后的纯静态二进制文件 (静态资源与权限策略已全部内嵌)
-COPY --from=builder /out/cgin /app/cgin
+COPY --from=builder /out/cfiber /app/cfiber
 
 # 预先创建可写入的 storage 结构并递归赋予 appuser 权限
 RUN mkdir -p /app/storage/logs \
@@ -54,5 +54,5 @@ EXPOSE 3300
 USER 10001:10001
 
 # 支持直接传参执行不同子命令（如 serve, db:seed）
-ENTRYPOINT ["/app/cgin"]
+ENTRYPOINT ["/app/cfiber"]
 CMD ["serve"]

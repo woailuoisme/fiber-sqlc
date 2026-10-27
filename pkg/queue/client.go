@@ -15,8 +15,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
 )
 
 // Client 是队列基础设施的唯一实现类型：同一实例同时满足 Dispatcher、Inspector 与 Worker 三个 seam。

@@ -14,8 +14,8 @@ import (
 	"github.com/samber/lo"
 	"go.opentelemetry.io/otel/trace"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // headerRequestID 是全链路追踪请求头。

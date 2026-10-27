@@ -13,9 +13,9 @@ import (
 	alipayv3 "github.com/go-pay/gopay/alipay/v3"
 	"github.com/rs/zerolog"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/payment/enum"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/payment/enum"
 )
 
 // 支付宝交易状态常量，取值来自支付宝开放平台交易状态协议。

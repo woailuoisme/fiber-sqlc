@@ -8,8 +8,8 @@ import (
 	"github.com/gin-contrib/authz"
 	"github.com/gin-gonic/gin"
 
-	"cgin/pkg/authentication"
-	"cgin/pkg/errs"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/errs"
 )
 
 // Auth 校验 Bearer 令牌并把认证身份注入上下文。

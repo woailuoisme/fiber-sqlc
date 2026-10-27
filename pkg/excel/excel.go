@@ -16,7 +16,7 @@ import (
 	"github.com/samber/oops"
 	"github.com/xuri/excelize/v2"
 
-	"cgin/pkg/errs"
+	"cfiber/pkg/errs"
 )
 
 const (

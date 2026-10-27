@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/pkg/errs"
+	"cfiber/pkg/errs"
 )
 
 // api.md 5.2 明文规定的两条文案，不得随意改动。

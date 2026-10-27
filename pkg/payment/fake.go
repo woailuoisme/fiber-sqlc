@@ -8,8 +8,8 @@ import (
 
 	"github.com/samber/lo"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/payment/enum"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/payment/enum"
 )
 
 // Fake 注入操作名常量，用于按操作注入故障。

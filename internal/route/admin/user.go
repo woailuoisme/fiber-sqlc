@@ -3,9 +3,9 @@ package adminroute
 import (
 	"github.com/gin-gonic/gin"
 
-	adminhandler "cgin/internal/handler/admin"
-	"cgin/internal/middleware"
-	"cgin/pkg/authorization"
+	adminhandler "cfiber/internal/handler/admin"
+	"cfiber/internal/middleware"
+	"cfiber/pkg/authorization"
 )
 
 // RegisterAdminUserRoutes 注册后台用户管理端点（/v1/admin/users）。

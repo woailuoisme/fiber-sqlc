@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/pkg/logger"
-	"cgin/pkg/queue"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/queue"
 )
 
 type solidTestJob struct {

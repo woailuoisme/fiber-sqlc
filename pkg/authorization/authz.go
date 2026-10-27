@@ -17,8 +17,8 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	stringadapter "github.com/casbin/casbin/v2/persist/string-adapter"
 
-	"cgin/pkg/authentication"
-	"cgin/pkg/errs"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/errs"
 )
 
 // 常用资源与动作常量。

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
-	"cgin/pkg/cache"
+	"cfiber/pkg/cache"
 )
 
 func TestMain(m *testing.M) {

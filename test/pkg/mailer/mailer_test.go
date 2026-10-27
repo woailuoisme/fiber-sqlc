@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
-	"cgin/internal/config"
-	"cgin/pkg/logger"
-	"cgin/pkg/mailer"
+	"cfiber/internal/config"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/mailer"
 )
 
 func TestMain(m *testing.M) {
@@ -84,8 +84,8 @@ func (m *mockDriver) Count() int {
 func TestMailpitDriverLifecycle(t *testing.T) {
 	cfg := config.MailConfig{
 		Driver:      "mailpit",
-		FromAddress: "no-reply@cgin.local",
-		FromName:    "cgin",
+		FromAddress: "no-reply@cfiber.local",
+		FromName:    "cfiber",
 		Mailpit: config.MailpitConfig{
 			Host: "127.0.0.1",
 			Port: 1025,
@@ -175,7 +175,7 @@ func TestResendDriverSendSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "Bearer re_test_secret_key", receivedAuth)
-	assert.Equal(t, "cgin-mailer/1.0", receivedAgent)
+	assert.Equal(t, "cfiber-mailer/1.0", receivedAgent)
 	assert.Equal(t, "Shop <noreply@example.com>", receivedBody["from"])
 	assert.Equal(t, []any{"buyer@example.com"}, receivedBody["to"])
 	assert.Equal(t, "订单支付凭据", receivedBody["subject"])

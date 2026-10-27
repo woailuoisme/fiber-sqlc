@@ -13,11 +13,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/pkg/logger"
-	"cgin/pkg/money"
-	"cgin/pkg/payment"
-	"cgin/pkg/payment/enum"
+	"cfiber/internal/config"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/money"
+	"cfiber/pkg/payment"
+	"cfiber/pkg/payment/enum"
 )
 
 func TestPaymentManagerDisabledWhenEmpty(t *testing.T) {

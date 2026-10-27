@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"cgin/internal/config"
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
 )
 
 // DefaultAppKey 是默认小程序应用的命名空间标识。

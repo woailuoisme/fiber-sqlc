@@ -19,8 +19,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/notification/channel/sms"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/notification/channel/sms"
 )
 
 const (

@@ -9,8 +9,8 @@ import (
 	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
 
-	"cgin/internal/console/core"
-	"cgin/internal/console/scaffold"
+	"cfiber/internal/console/core"
+	"cfiber/internal/console/scaffold"
 )
 
 const (
@@ -57,9 +57,9 @@ func (o *MakeCRUDOptions) Complete(args []string) error {
 func (o *MakeCRUDOptions) Validate() error {
 	if o.Name == "" {
 		if o.Delete {
-			return &ValidationError{Field: "name", Message: "accepts 1 arg(s), received 0. Usage: cgin make:crud <name> -d"}
+			return &ValidationError{Field: "name", Message: "accepts 1 arg(s), received 0. Usage: cfiber make:crud <name> -d"}
 		}
-		return &ValidationError{Field: "name", Message: "accepts 1 arg(s), received 0. Usage: cgin make:crud <name>"}
+		return &ValidationError{Field: "name", Message: "accepts 1 arg(s), received 0. Usage: cfiber make:crud <name>"}
 	}
 	return nil
 }
@@ -259,7 +259,7 @@ func (o *MakeCRUDOptions) promptForm(isDestroy bool) error {
 	return nil
 }
 
-// newMakeCRUDCmd 构建 CRUD 模块生成与删除回退命令 (cgin make:crud <name> [-d])。
+// newMakeCRUDCmd 构建 CRUD 模块生成与删除回退命令 (cfiber make:crud <name> [-d])。
 func newMakeCRUDCmd(f Factory) *cobra.Command {
 	opts := NewMakeCRUDOptions(f)
 
@@ -279,14 +279,14 @@ Deletion requires a compilable module: run 'just sqlc' after creating a module
 before using -d, otherwise the CLI itself cannot be built from source.
 
 Examples:
-  cgin make:crud article
-  cgin make:crud article_category --tag "分类管理" --chinese "文章分类"
-  cgin make:crud post --client
-  cgin make:crud product --force
-  cgin make:crud order --dry-run
-  cgin make:crud article -d
-  cgin make:crud article --delete --force
-  cgin make:crud order -d --dry-run`,
+  cfiber make:crud article
+  cfiber make:crud article_category --tag "分类管理" --chinese "文章分类"
+  cfiber make:crud post --client
+  cfiber make:crud product --force
+  cfiber make:crud order --dry-run
+  cfiber make:crud article -d
+  cfiber make:crud article --delete --force
+  cfiber make:crud order -d --dry-run`,
 		Args: maxArgs(1),
 		RunE: runCommand(opts),
 	}

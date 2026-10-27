@@ -6,11 +6,11 @@ package adminhandler
 import (
 	"github.com/gin-gonic/gin"
 
-	admindto "cgin/internal/dto/admin"
-	adminservice "cgin/internal/service/admin"
-	"cgin/pkg/authentication"
-	"cgin/pkg/response"
-	"cgin/pkg/validator"
+	admindto "cfiber/internal/dto/admin"
+	adminservice "cfiber/internal/service/admin"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/response"
+	"cfiber/pkg/validator"
 )
 
 // AuthHandler 是管理员认证的 HTTP 适配层。

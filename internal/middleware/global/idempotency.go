@@ -8,9 +8,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/middleware/global/idempotency"
-	"cgin/pkg/authentication"
-	"cgin/pkg/cache"
+	"cfiber/internal/middleware/global/idempotency"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/cache"
 )
 
 const (

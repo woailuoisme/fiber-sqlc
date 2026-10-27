@@ -7,11 +7,11 @@ import (
 	"context"
 	"errors"
 
-	"cgin/internal/database/sqlc"
-	admindto "cgin/internal/dto/admin"
-	appuser "cgin/internal/user"
-	"cgin/pkg/authentication"
-	"cgin/pkg/errs"
+	"cfiber/internal/database/sqlc"
+	admindto "cfiber/internal/dto/admin"
+	appuser "cfiber/internal/user"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/errs"
 )
 
 // passwordChanger 声明管理员改密所需的本地凭据能力（接口由消费方定义）。

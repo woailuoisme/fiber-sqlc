@@ -7,8 +7,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
-	"cgin/internal/config"
-	"cgin/pkg/eventbus"
+	"cfiber/internal/config"
+	"cfiber/pkg/eventbus"
 )
 
 // NewInjector 构造并组装系统全量依赖注入容器（单 RootScope）。

@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/database"
+	"cfiber/internal/config"
+	"cfiber/internal/database"
 )
 
 // TestDatabasePoolLimits 断言池上限真的落到了 pgxpool 上。
@@ -23,7 +23,7 @@ func TestDatabasePoolLimits(t *testing.T) {
 	cfg, err := config.Load()
 	require.NoError(t, err, "加载配置失败")
 
-	pool, err := database.Open(t.Context(), cfg.Database, "cgin-tests")
+	pool, err := database.Open(t.Context(), cfg.Database, "cfiber-tests")
 	require.NoError(t, err, "请确认 DB_URL 可达")
 	t.Cleanup(pool.Close)
 
@@ -38,7 +38,7 @@ func TestDatabaseSessionParams(t *testing.T) {
 	cfg, err := config.Load()
 	require.NoError(t, err, "加载配置失败")
 
-	const appName = "cgin-tests"
+	const appName = "cfiber-tests"
 	pool, err := database.Open(t.Context(), cfg.Database, appName)
 	require.NoError(t, err, "请确认 DB_URL 可达")
 	t.Cleanup(pool.Close)
@@ -69,7 +69,7 @@ func TestDatabaseSessionIsVisibleToPgStatActivity(t *testing.T) {
 	cfg, err := config.Load()
 	require.NoError(t, err, "加载配置失败")
 
-	pool, err := database.Open(t.Context(), cfg.Database, "cgin-tests")
+	pool, err := database.Open(t.Context(), cfg.Database, "cfiber-tests")
 	require.NoError(t, err, "请确认 DB_URL 可达")
 	t.Cleanup(pool.Close)
 
@@ -77,7 +77,7 @@ func TestDatabaseSessionIsVisibleToPgStatActivity(t *testing.T) {
 	require.NoError(t, pool.QueryRow(t.Context(),
 		"select application_name from pg_stat_activity where pid = pg_backend_pid()",
 	).Scan(&seen))
-	assert.Equal(t, "cgin-tests", seen)
+	assert.Equal(t, "cfiber-tests", seen)
 }
 
 // TestDatabaseConnectTimeoutIsEnforced 确认不可达的服务端会在超时预算内失败。
@@ -86,11 +86,11 @@ func TestDatabaseConnectTimeoutIsEnforced(t *testing.T) {
 	require.NoError(t, err, "加载配置失败")
 
 	// 10.255.255.1 是私网保留地址：包会被丢弃而不是立刻拒绝，正好用来观察超时。
-	cfg.Database.URL = "postgres://user:pass@10.255.255.1:5432/cgin?sslmode=disable"
+	cfg.Database.URL = "postgres://user:pass@10.255.255.1:5432/cfiber?sslmode=disable"
 	cfg.Database.ConnectTimeout = time.Second
 
 	start := time.Now()
-	_, err = database.Open(t.Context(), cfg.Database, "cgin-tests")
+	_, err = database.Open(t.Context(), cfg.Database, "cfiber-tests")
 	elapsed := time.Since(start)
 
 	require.Error(t, err, "连不上时必须失败，而不是无限等待")
@@ -103,7 +103,7 @@ func TestDatabaseStatementTimeoutIsEnforced(t *testing.T) {
 	require.NoError(t, err, "加载配置失败")
 
 	cfg.Database.StatementTimeout = time.Second
-	pool, err := database.Open(t.Context(), cfg.Database, "cgin-tests")
+	pool, err := database.Open(t.Context(), cfg.Database, "cfiber-tests")
 	require.NoError(t, err, "请确认 DB_URL 可达")
 	t.Cleanup(pool.Close)
 
@@ -129,7 +129,7 @@ func TestDatabaseBudgetWarning(t *testing.T) {
 	cfg, err := config.Load()
 	require.NoError(t, err, "加载配置失败")
 
-	pool, err := database.Open(t.Context(), cfg.Database, "cgin-tests")
+	pool, err := database.Open(t.Context(), cfg.Database, "cfiber-tests")
 	require.NoError(t, err, "请确认 DB_URL 可达")
 	t.Cleanup(pool.Close)
 

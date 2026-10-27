@@ -26,10 +26,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/websocket"
 
-	"cgin/internal/config"
-	"cgin/internal/handler"
-	"cgin/internal/service"
-	platformRealtime "cgin/pkg/realtime"
+	"cfiber/internal/config"
+	"cfiber/internal/handler"
+	"cfiber/internal/service"
+	platformRealtime "cfiber/pkg/realtime"
 )
 
 // getRealtimeConfig 加载当前环境的 Centrifugo 配置。

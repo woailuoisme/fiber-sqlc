@@ -11,8 +11,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/notification/contract"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/notification/contract"
 )
 
 // Channel Gotify 推送通知渠道实现。

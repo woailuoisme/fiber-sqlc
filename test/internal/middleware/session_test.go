@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/middleware/global"
+	"cfiber/internal/middleware/global"
 )
 
 // TestSessionMiddleware_SetAndGet 验证 gin-contrib/sessions 能够正确在上下文中读写会话状态并随 Cookie 回传。
@@ -63,7 +63,7 @@ func TestSessionMiddleware_SetAndGet(t *testing.T) {
 func TestSessionMiddleware_CustomCookieName(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	m := global.New(global.Deps{
-		SessionName:   "cgin_admin_sid",
+		SessionName:   "cfiber_admin_sid",
 		SessionSecret: "secret-key-for-test-at-least-32-bytes!!",
 	})
 
@@ -80,7 +80,7 @@ func TestSessionMiddleware_CustomCookieName(t *testing.T) {
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, "/set", nil))
 
 	require.Equal(t, http.StatusOK, recorder.Code)
-	assert.Contains(t, recorder.Header().Get("Set-Cookie"), "cgin_admin_sid=", "应使用配置的 Cookie 名称")
+	assert.Contains(t, recorder.Header().Get("Set-Cookie"), "cfiber_admin_sid=", "应使用配置的 Cookie 名称")
 }
 
 // TestSessionMiddleware_GeneratesEphemeralSecret 验证未注入密钥时仍可工作，不会退回静态弱密钥。

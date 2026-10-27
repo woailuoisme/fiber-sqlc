@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"cgin/internal/media"
+	"cfiber/internal/media"
 )
 
 func TestNaming_Strategies(t *testing.T) {

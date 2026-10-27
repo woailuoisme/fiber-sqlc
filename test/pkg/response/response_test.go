@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/pkg/response"
+	"cfiber/pkg/response"
 )
 
 func init() { gin.SetMode(gin.TestMode) }

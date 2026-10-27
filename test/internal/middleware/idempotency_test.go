@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/middleware/global"
-	"cgin/internal/middleware/global/idempotency"
-	"cgin/pkg/errs"
+	"cfiber/internal/middleware/global"
+	"cfiber/internal/middleware/global/idempotency"
+	"cfiber/pkg/errs"
 )
 
 // testIdempotencyKey 是符合默认 36 字符校验的幂等键。

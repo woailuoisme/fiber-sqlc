@@ -12,8 +12,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
 )
 
 // 令牌类型枚举。两类令牌互不通用，避免刷新令牌被当作访问令牌使用。

@@ -18,10 +18,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/i18n"
-	"cgin/pkg/validator"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/i18n"
+	"cfiber/pkg/validator"
 )
 
 func init() { gin.SetMode(gin.TestMode) }

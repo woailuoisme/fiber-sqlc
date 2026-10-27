@@ -3,8 +3,8 @@ package route
 import (
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/handler"
-	"cgin/internal/middleware"
+	"cfiber/internal/handler"
+	"cfiber/internal/middleware"
 )
 
 // RegisterPaymentRoutes 在 /v1/payments 下注册支付网关公开回调端点。

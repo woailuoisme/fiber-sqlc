@@ -3,8 +3,8 @@ package route
 import (
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/handler"
-	"cgin/internal/middleware"
+	"cfiber/internal/handler"
+	"cfiber/internal/middleware"
 )
 
 // RegisterRealtimeRoutes 注册实时通信客户端端点与 Centrifugo 代理回调端点。

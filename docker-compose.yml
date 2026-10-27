@@ -1,6 +1,6 @@
 x-app: &app
   build: .
-  image: cgin:local
+  image: cfiber:local
   pull_policy: build
   restart: unless-stopped
   # .env.production 必须提供 SESSION_SECRET（≥32 字符，生成方式见 .env.example）：
@@ -13,14 +13,14 @@ x-app: &app
 services:
   api:
     <<: *app
-    container_name: cgin-api
+    container_name: cfiber-api
     command: ["serve"]
     ports:
       - "${APP_PORT:-3300}:3300"
 
   worker:
     <<: *app
-    container_name: cgin-worker
+    container_name: cfiber-worker
     command: ["queue:work"]
     depends_on:
       - api

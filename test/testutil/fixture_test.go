@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/enum"
-	"cgin/test/testutil"
+	"cfiber/internal/enum"
+	"cfiber/test/testutil"
 )
 
 func TestUserFixtureBuilder(t *testing.T) {

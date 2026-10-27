@@ -6,11 +6,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/service"
-	"cgin/pkg/authentication"
-	"cgin/pkg/errs"
-	platformRealtime "cgin/pkg/realtime"
-	"cgin/pkg/response"
+	"cfiber/internal/service"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/errs"
+	platformRealtime "cfiber/pkg/realtime"
+	"cfiber/pkg/response"
 )
 
 // RealtimeHandler 是实时通信端点的 HTTP 适配层。

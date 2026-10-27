@@ -7,14 +7,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/config"
-	"cgin/internal/handler"
-	adminhandler "cgin/internal/handler/admin"
-	"cgin/internal/middleware"
-	"cgin/internal/middleware/global"
-	"cgin/internal/route"
-	adminroute "cgin/internal/route/admin"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/internal/handler"
+	adminhandler "cfiber/internal/handler/admin"
+	"cfiber/internal/middleware"
+	"cfiber/internal/middleware/global"
+	"cfiber/internal/route"
+	adminroute "cfiber/internal/route/admin"
+	"cfiber/pkg/errs"
 )
 
 // routeHandlers 汇总各模块的 HTTP 处理器，由装配方填充。

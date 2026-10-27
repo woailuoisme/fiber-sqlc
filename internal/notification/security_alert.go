@@ -3,10 +3,10 @@ package notification
 import (
 	"cmp"
 
-	"cgin/internal/notification/store"
-	"cgin/pkg/mailer"
-	"cgin/pkg/notification"
-	"cgin/pkg/notification/contract"
+	"cfiber/internal/notification/store"
+	"cfiber/pkg/mailer"
+	"cfiber/pkg/notification"
+	"cfiber/pkg/notification/contract"
 )
 
 // SecurityAlertNotification 多渠道账号安全事件通知（邮件 + 数据库站内信 + 实时广播）。

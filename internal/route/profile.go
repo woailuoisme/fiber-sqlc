@@ -3,8 +3,8 @@ package route
 import (
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/handler"
-	"cgin/internal/middleware"
+	"cfiber/internal/handler"
+	"cfiber/internal/middleware"
 )
 
 // RegisterProfileRoutes 注册前端用户个人档案端点 (/v1/users)。

@@ -6,9 +6,9 @@ import (
 
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/notification/contract"
-	"cgin/pkg/realtime"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/notification/contract"
+	"cfiber/pkg/realtime"
 )
 
 // Message 表示实时广播通知载荷。

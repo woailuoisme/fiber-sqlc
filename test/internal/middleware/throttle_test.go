@@ -15,12 +15,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/middleware"
-	"cgin/internal/middleware/global"
-	"cgin/pkg/authentication"
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/internal/middleware"
+	"cfiber/internal/middleware/global"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
 )
 
 // mockRateLimitStore 模拟内存限流存储。

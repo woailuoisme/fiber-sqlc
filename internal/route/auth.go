@@ -4,8 +4,8 @@ package route
 import (
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/handler"
-	"cgin/internal/middleware"
+	"cfiber/internal/handler"
+	"cfiber/internal/middleware"
 )
 
 // RegisterAuthRoutes 在 /v1/auth 下注册全部认证端点。

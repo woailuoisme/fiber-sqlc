@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"cgin/pkg/logger"
+	"cfiber/pkg/logger"
 )
 
 const (

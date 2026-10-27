@@ -3,9 +3,9 @@ package adminhandler
 import (
 	"github.com/gin-gonic/gin"
 
-	admindto "cgin/internal/dto/admin"
-	adminservice "cgin/internal/service/admin"
-	"cgin/pkg/response"
+	admindto "cfiber/internal/dto/admin"
+	adminservice "cfiber/internal/service/admin"
+	"cfiber/pkg/response"
 )
 
 // UserHandler 是管理端用户 CRUD 的 HTTP 适配层。

@@ -14,11 +14,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 
-	"cgin/internal/config"
-	"cgin/pkg/cache"
-	"cgin/pkg/i18n"
-	"cgin/pkg/logger"
-	"cgin/pkg/validator"
+	"cfiber/internal/config"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/i18n"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/validator"
 )
 
 // Deps 描述全局中间件所需的全部外部依赖。

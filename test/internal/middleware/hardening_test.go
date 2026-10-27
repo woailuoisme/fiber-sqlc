@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/middleware/global"
+	"cfiber/internal/middleware/global"
 )
 
 // TestRecovery 锁定 panic 边界的对外行为：状态码统一为 500，响应体不带任何内部细节。

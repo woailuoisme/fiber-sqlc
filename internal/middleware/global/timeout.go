@@ -7,7 +7,7 @@ import (
 	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 
-	"cgin/pkg/errs"
+	"cfiber/pkg/errs"
 )
 
 // Timeout 基于 gin-contrib/timeout 控制请求超时，超时输出 504，长连接自动豁免。

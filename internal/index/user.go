@@ -8,9 +8,9 @@ import (
 
 	"github.com/samber/lo"
 
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/pkg/search"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/pkg/search"
 )
 
 // defaultBatchSize 默认批量检索导入批次大小。

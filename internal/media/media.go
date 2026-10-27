@@ -2,9 +2,9 @@
 package media
 
 import (
-	"cgin/internal/config"
-	"cgin/internal/database"
-	"cgin/pkg/storage"
+	"cfiber/internal/config"
+	"cfiber/internal/database"
+	"cfiber/pkg/storage"
 )
 
 // New 根据配置与基础设施装配顶层多态媒体管理门面 Manager。

@@ -12,8 +12,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/resilience"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/resilience"
 )
 
 var (

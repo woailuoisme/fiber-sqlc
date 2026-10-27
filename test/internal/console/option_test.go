@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/console"
-	"cgin/internal/console/core"
-	"cgin/internal/console/scaffold"
+	"cfiber/internal/config"
+	"cfiber/internal/console"
+	"cfiber/internal/console/core"
+	"cfiber/internal/console/scaffold"
 )
 
 // TestServeOptions_Validate 测试 HTTP 服务启动参数校验规则。

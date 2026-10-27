@@ -9,8 +9,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/notification/contract"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/notification/contract"
 )
 
 // Channel 即时通讯通知渠道实现。

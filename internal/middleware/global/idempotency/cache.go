@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"cgin/pkg/cache"
+	"cfiber/pkg/cache"
 )
 
 const (

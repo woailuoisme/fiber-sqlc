@@ -27,7 +27,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 
-	"cgin/internal/config"
+	"cfiber/internal/config"
 )
 
 const defaultShutdownTimeout = 5 * time.Second

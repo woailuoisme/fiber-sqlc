@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"cgin/pkg/mailer/templates"
+	"cfiber/pkg/mailer/templates"
 )
 
 var (
@@ -24,7 +24,7 @@ const (
 	defaultThemeDanger  = "#DC4D2F"
 	defaultThemeWarning = "#FF6200"
 	defaultThemeBg      = "#F4F4F7"
-	defaultAppName      = "cgin"
+	defaultAppName      = "cfiber"
 )
 
 // RenderTemplate 渲染指定的邮件模板与上下文数据，并自动注入主题样式。

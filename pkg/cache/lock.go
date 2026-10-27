@@ -11,7 +11,7 @@ import (
 	"github.com/redis/rueidis"
 	"github.com/redis/rueidis/rueidislock"
 
-	"cgin/internal/config"
+	"cfiber/internal/config"
 )
 
 var (

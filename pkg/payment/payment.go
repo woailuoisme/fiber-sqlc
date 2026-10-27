@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"cgin/pkg/money"
-	"cgin/pkg/payment/enum"
+	"cfiber/pkg/money"
+	"cfiber/pkg/payment/enum"
 )
 
 // ErrCapabilityNotSupported 表示渠道或 Provider 未实现请求的操作能力（如不支持退款或查单）。

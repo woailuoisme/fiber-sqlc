@@ -6,10 +6,10 @@ import (
 
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
-	"cgin/pkg/mailer"
-	"cgin/pkg/queue"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/mailer"
+	"cfiber/pkg/queue"
 )
 
 // TaskSendWelcomeEmail 声明发送欢迎邮件的 Asynq 任务唯一标识符。
@@ -64,7 +64,7 @@ func (j *WelcomeEmailJob) Handle(ctx context.Context) error {
 
 	htmlBody, err := mailer.RenderTemplate("welcome", map[string]any{
 		"Name":    j.Name,
-		"AppName": "cgin",
+		"AppName": "cfiber",
 		"Button": map[string]any{
 			"Text":  "Get Started",
 			"Url":   "#",
@@ -77,7 +77,7 @@ func (j *WelcomeEmailJob) Handle(ctx context.Context) error {
 
 	msg := mailer.Message{
 		To:      []string{j.Email},
-		Subject: "Welcome to cgin",
+		Subject: "Welcome to cfiber",
 		Body:    htmlBody,
 		IsHTML:  true,
 	}

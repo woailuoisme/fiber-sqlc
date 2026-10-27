@@ -13,10 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
-	"cgin/internal/config"
-	"cgin/pkg/cache"
-	"cgin/pkg/logger"
-	"cgin/pkg/queue"
+	"cfiber/internal/config"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/queue"
 )
 
 func TestMain(m *testing.M) {

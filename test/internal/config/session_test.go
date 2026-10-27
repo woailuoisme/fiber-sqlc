@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
+	"cfiber/internal/config"
 )
 
 // newSessionConfig 构造只关心会话模块的配置，其余模块的校验噪声不参与断言。
@@ -34,7 +34,7 @@ func TestSessionSecretRequiredInProduction(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := newSessionConfig("production", config.SessionConfig{
-				Name:   "cgin_session",
+				Name:   "cfiber_session",
 				Secret: tt.secret,
 				MaxAge: time.Hour,
 			})
@@ -51,7 +51,7 @@ func TestSessionSecretRequiredInProduction(t *testing.T) {
 func TestSessionSecretAcceptedInProduction(t *testing.T) {
 	secret := "0123456789abcdef0123456789abcdef"
 	cfg := newSessionConfig("production", config.SessionConfig{
-		Name:   "cgin_session",
+		Name:   "cfiber_session",
 		Secret: secret,
 		MaxAge: time.Hour,
 	})
@@ -66,7 +66,7 @@ func TestSessionSecretAcceptedInProduction(t *testing.T) {
 
 // TestSessionSecretGeneratedOutsideProduction 非生产环境缺省密钥时自动生成并标记，供装配层告警。
 func TestSessionSecretGeneratedOutsideProduction(t *testing.T) {
-	cfg := newSessionConfig("local", config.SessionConfig{Name: "cgin_session", MaxAge: time.Hour})
+	cfg := newSessionConfig("local", config.SessionConfig{Name: "cfiber_session", MaxAge: time.Hour})
 
 	err := cfg.Validate()
 	if err != nil {
@@ -85,13 +85,13 @@ func TestSessionRejectsInvalidNameAndMaxAge(t *testing.T) {
 	})
 
 	t.Run("有效期为负", func(t *testing.T) {
-		cfg := newSessionConfig("local", config.SessionConfig{Name: "cgin_session", MaxAge: -time.Minute})
+		cfg := newSessionConfig("local", config.SessionConfig{Name: "cfiber_session", MaxAge: -time.Minute})
 		require.Error(t, cfg.Validate())
 		assert.Contains(t, cfg.Validate().Error(), "SESSION_MAX_AGE")
 	})
 
 	t.Run("有效期缺省时回填", func(t *testing.T) {
-		cfg := newSessionConfig("local", config.SessionConfig{Name: "cgin_session"})
+		cfg := newSessionConfig("local", config.SessionConfig{Name: "cfiber_session"})
 		_ = cfg.Validate()
 		assert.Equal(t, 168*time.Hour, cfg.Session.MaxAge)
 	})

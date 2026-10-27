@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/middleware/global"
-	"cgin/pkg/errs"
+	"cfiber/internal/middleware/global"
+	"cfiber/pkg/errs"
 )
 
 // TestBodyLimit 锁定请求体上限这条安全控制的两端：

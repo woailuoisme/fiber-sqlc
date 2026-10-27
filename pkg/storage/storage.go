@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
 )
 
 // msgFileNotFound 是对象不存在时对外暴露的固定文案。对象键不进响应体，只留在因由里进日志。

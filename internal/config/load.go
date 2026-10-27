@@ -57,7 +57,7 @@ func dropBlankSingleton(values []string) []string {
 func Default() *Config {
 	return &Config{
 		App: AppConfig{
-			Name: "cgin",
+			Name: "cfiber",
 			Env:  "local",
 		},
 		CORS: CORSConfig{

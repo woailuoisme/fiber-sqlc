@@ -7,7 +7,7 @@
 ## 1. 架构总览 (Architecture)
 
 ```
-[ Gin Web API (cgin) ]
+[ Gin Web API (cfiber) ]
         │
         ▼  OTLP/gRPC (默认 :4317，经单连接多路复用高效推流)
 [ otel/opentelemetry-collector-contrib ]
@@ -35,7 +35,7 @@ OpenObserve 的 OTLP 接入依赖 HTTP Basic 认证：
 
 ---
 
-## 3. 在 cgin 应用中开启遥测 (Application Activation)
+## 3. 在 cfiber 应用中开启遥测 (Application Activation)
 
 在 `.env` 或容器环境变量中设置：
 
@@ -50,7 +50,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317
 OTEL_INSECURE=true
 
 # 服务标识（在 OpenObserve 中呈现的服务名）
-OTEL_SERVICE_NAME=cgin
+OTEL_SERVICE_NAME=cfiber
 
 # 追踪采样率（1.0 表示 100% 全量采样，生产高吞吐环境建议根据需要调整如 0.2）
 OTEL_TRACES_SAMPLE_RATIO=1.0

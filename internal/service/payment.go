@@ -11,14 +11,14 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/oops"
 
-	"cgin/internal/config"
-	"cgin/internal/event"
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
-	"cgin/pkg/eventbus"
-	"cgin/pkg/logger"
-	platformPayment "cgin/pkg/payment"
-	"cgin/pkg/payment/enum"
+	"cfiber/internal/config"
+	"cfiber/internal/event"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/eventbus"
+	"cfiber/pkg/logger"
+	platformPayment "cfiber/pkg/payment"
+	"cfiber/pkg/payment/enum"
 )
 
 const (

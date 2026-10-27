@@ -19,7 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/samber/oops"
 
-	"cgin/pkg/logger"
+	"cfiber/pkg/logger"
 )
 
 // PostgreSQL 错误码，用于把约束冲突翻译成对调用方有意义的响应。

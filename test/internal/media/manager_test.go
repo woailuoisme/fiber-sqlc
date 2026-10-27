@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/database"
-	"cgin/internal/media"
-	"cgin/pkg/storage"
+	"cfiber/internal/config"
+	"cfiber/internal/database"
+	"cfiber/internal/media"
+	"cfiber/pkg/storage"
 )
 
 func TestManager_ContractsAndURLDerivation(t *testing.T) {

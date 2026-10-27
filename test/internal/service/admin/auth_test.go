@@ -11,16 +11,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/database/sqlc"
-	admindto "cgin/internal/dto/admin"
-	"cgin/internal/enum"
-	adminservice "cgin/internal/service/admin"
-	appuser "cgin/internal/user"
-	"cgin/pkg/authentication"
-	"cgin/pkg/errs"
-	"cgin/pkg/hasher"
-	"cgin/pkg/validator"
+	"cfiber/internal/config"
+	"cfiber/internal/database/sqlc"
+	admindto "cfiber/internal/dto/admin"
+	"cfiber/internal/enum"
+	adminservice "cfiber/internal/service/admin"
+	appuser "cfiber/internal/user"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/hasher"
+	"cfiber/pkg/validator"
 )
 
 func init() {
@@ -124,7 +124,7 @@ func (m *mockRepo) RecordLogin(_ context.Context, userID, _ string) error {
 func setupService(repo *mockRepo) (*adminservice.AuthService, *authentication.TokenIssuer) {
 	tokens := authentication.NewTokenIssuer(config.JWTConfig{
 		Secret:     testJWTSecret,
-		Issuer:     "cgin-test",
+		Issuer:     "cfiber-test",
 		AccessTTL:  15 * time.Minute,
 		RefreshTTL: 24 * time.Hour,
 	}, nil)
@@ -438,10 +438,10 @@ func TestAdminChangePasswordFlow(t *testing.T) {
 
 // TestAdminAuthDTOSerialization 校验 DTO 的 JSON 序列化与反序列化字段契约。
 func TestAdminAuthDTOSerialization(t *testing.T) {
-	raw := []byte(`{"email":"admin@cgin.local","password":"secret"}`)
+	raw := []byte(`{"email":"admin@cfiber.local","password":"secret"}`)
 	var req admindto.SignInEmailBody
 	require.NoError(t, json.Unmarshal(raw, &req))
-	assert.Equal(t, "admin@cgin.local", req.Email)
+	assert.Equal(t, "admin@cfiber.local", req.Email)
 	assert.Equal(t, "secret", req.Password)
 
 	signOutRaw := []byte(`{"refreshToken":"rt_test123"}`)

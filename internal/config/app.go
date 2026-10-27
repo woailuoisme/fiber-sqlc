@@ -20,7 +20,7 @@ var knownEnvs = []string{"local", "development", "test", "staging", "production"
 
 // AppConfig 描述进程核心运行参数（对齐 Laravel config/app.php）。
 type AppConfig struct {
-	Name       string `env:"APP_NAME" envDefault:"cgin"`
+	Name       string `env:"APP_NAME" envDefault:"cfiber"`
 	Env        string `env:"APP_ENV" envDefault:"local"`
 	Debug      bool   `env:"APP_DEBUG"`
 	Port       int    `env:"APP_PORT" envDefault:"3300"`

@@ -10,9 +10,9 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/mailer"
-	"cgin/pkg/notification/contract"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/mailer"
+	"cfiber/pkg/notification/contract"
 )
 
 // Channel 邮件通知渠道实现，负责将通知渲染并分发给底层 Mailer 发送。

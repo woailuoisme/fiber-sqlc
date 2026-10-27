@@ -3,11 +3,11 @@ package listener
 import (
 	"context"
 
-	"cgin/internal/event"
-	"cgin/internal/job"
-	"cgin/pkg/eventbus"
-	"cgin/pkg/logger"
-	"cgin/pkg/queue"
+	"cfiber/internal/event"
+	"cfiber/internal/job"
+	"cfiber/pkg/eventbus"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/queue"
 )
 
 // RegisterListeners 向事件总线挂载 auth 领域切片所关注的所有领域事件监听。

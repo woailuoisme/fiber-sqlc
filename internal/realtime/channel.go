@@ -5,11 +5,11 @@ import (
 	"errors"
 	"strings"
 
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	appuser "cgin/internal/user"
-	platformRealtime "cgin/pkg/realtime"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	appuser "cfiber/internal/user"
+	platformRealtime "cfiber/pkg/realtime"
 )
 
 // UserChannel 构建受订阅代理保护的个人用户私有频道名称（private:users.userID）。

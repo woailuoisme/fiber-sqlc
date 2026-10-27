@@ -19,8 +19,8 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"golang.org/x/text/language"
 
-	"cgin/internal/config"
-	"cgin/message"
+	"cfiber/internal/config"
+	"cfiber/message"
 )
 
 // 语言包内的分节名，与 message/<语言>/<分节>.toml 一一对应。

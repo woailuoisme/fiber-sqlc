@@ -1,6 +1,6 @@
-// Package console 是 cgin 的命令行界面：命令定义、参数解析与终端输出。
+// Package console 是 cfiber 的命令行界面：命令定义、参数解析与终端输出。
 //
-// 应用的装配与运行在 cgin/internal/bootstrap，命令只做参数校验与编排，
+// 应用的装配与运行在 cfiber/internal/bootstrap，命令只做参数校验与编排，
 // 依赖方向是 console → bootstrap。
 package console
 
@@ -14,7 +14,7 @@ import (
 	"github.com/dromara/carbon/v2"
 	"github.com/spf13/cobra"
 
-	"cgin/internal/console/core"
+	"cfiber/internal/console/core"
 )
 
 // 构建元信息，由链接期 -X 注入。
@@ -57,7 +57,7 @@ func Execute(ctx context.Context, args []string) error {
 func ExecuteWithFactory(ctx context.Context, f Factory, args []string) error {
 	cmd := NewRootCommandWithFactory(f)
 	// 如果传入包含可执行程序名自身的 argv（如 os.Args），切掉程序名
-	if len(args) > 0 && (args[0] == "cgin" || filepath.Base(args[0]) == filepath.Base(os.Args[0])) {
+	if len(args) > 0 && (args[0] == "cfiber" || filepath.Base(args[0]) == filepath.Base(os.Args[0])) {
 		args = args[1:]
 	}
 	cmd.SetArgs(args)
@@ -72,8 +72,8 @@ func NewRootCommand() *cobra.Command {
 // NewRootCommandWithFactory 注入依赖工厂并组装根命令与全部子命令。
 func NewRootCommandWithFactory(f Factory) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:           "cgin",
-		Short:         "cgin application console",
+		Use:           "cfiber",
+		Short:         "cfiber application console",
 		Version:       fmt.Sprintf("%s (commit %s, built %s)", version, commit, date),
 		SilenceUsage:  true,
 		SilenceErrors: true,

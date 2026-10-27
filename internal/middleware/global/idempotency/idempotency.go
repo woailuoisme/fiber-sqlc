@@ -14,15 +14,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 const (
 	// ctxKeyIsFromCache 标记当前响应是否由幂等缓存回放。
-	ctxKeyIsFromCache = "cgin:idempotency:isFromCache"
+	ctxKeyIsFromCache = "cfiber:idempotency:isFromCache"
 	// ctxKeyWasPutToCache 标记当前响应是否已写入幂等缓存。
-	ctxKeyWasPutToCache = "cgin:idempotency:wasPutToCache"
+	ctxKeyWasPutToCache = "cfiber:idempotency:wasPutToCache"
 	// redactedKey 日志中替代真实幂等键的占位符。
 	redactedKey = "[redacted]"
 )

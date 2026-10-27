@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/pkg/ready"
+	"cfiber/pkg/ready"
 )
 
 type stubPinger struct {

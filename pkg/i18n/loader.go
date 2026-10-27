@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"cgin/message"
+	"cfiber/message"
 )
 
 // sectionSuffix 是语言资源文件的分节后缀。

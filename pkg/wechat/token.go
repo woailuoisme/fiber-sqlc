@@ -10,8 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
 )
 
 const (

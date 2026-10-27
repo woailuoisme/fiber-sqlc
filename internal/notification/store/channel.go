@@ -10,10 +10,10 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/pkg/errs"
-	"cgin/pkg/notification/contract"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/notification/contract"
 )
 
 // Channel 数据库通知渠道实现。

@@ -8,7 +8,7 @@ import (
 
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
+	"cfiber/pkg/errs"
 )
 
 // ChannelAuthorization 定义私有/成员频道的订阅授权回调函数签名。

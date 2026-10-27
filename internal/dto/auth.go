@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"cgin/pkg/validator"
+	"cfiber/pkg/validator"
 )
 
 // SignUpEmailBody 是 POST /v1/auth/sign-up/email 的请求体。

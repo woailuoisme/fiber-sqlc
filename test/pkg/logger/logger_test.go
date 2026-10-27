@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 
-	"cgin/internal/config"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/pkg/logger"
 )
 
 func TestMain(m *testing.M) {
@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 func TestLogger_BuildAndContext(t *testing.T) {
 	cfg := &config.Config{
 		App: config.AppConfig{
-			Name: "cgin-test",
+			Name: "cfiber-test",
 			Env:  "local",
 		},
 		Log: config.LogConfig{
@@ -47,7 +47,7 @@ func TestLogger_BuildAndContext(t *testing.T) {
 func TestLogger_ChannelJSON(t *testing.T) {
 	cfg := &config.Config{
 		App: config.AppConfig{
-			Name: "cgin-test",
+			Name: "cfiber-test",
 			Env:  "production",
 		},
 		Log: config.LogConfig{

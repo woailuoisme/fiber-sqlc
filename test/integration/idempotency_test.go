@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/middleware/global/idempotency"
-	"cgin/pkg/cache"
+	"cfiber/internal/config"
+	"cfiber/internal/middleware/global/idempotency"
+	"cfiber/pkg/cache"
 )
 
 // openIdempotencyCache 打开真实缓存客户端，供幂等存储与锁的集成验证使用。

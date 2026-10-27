@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"cgin/pkg/errs"
+	"cfiber/pkg/errs"
 )
 
 // localDisk 用操作系统文件系统实现 Disk。

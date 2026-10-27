@@ -14,8 +14,8 @@ import (
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 	"github.com/spf13/cobra"
 
-	"cgin/internal/console/core"
-	"cgin/pkg/resilience"
+	"cfiber/internal/console/core"
+	"cfiber/pkg/resilience"
 )
 
 // 预设官方源与国内高可用加速镜像源列表。
@@ -138,7 +138,7 @@ func (o *GeoIPUpdateOptions) downloadFile(ctx context.Context, client *http.Clie
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", "cgin-cli/geoip-updater")
+	req.Header.Set("User-Agent", "cfiber-cli/geoip-updater")
 	req.Header.Set("Accept-Encoding", "identity")
 
 	resp, err := client.Do(req)

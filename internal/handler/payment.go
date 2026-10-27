@@ -5,12 +5,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/dto"
-	"cgin/internal/service"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
-	platformPayment "cgin/pkg/payment"
-	"cgin/pkg/payment/enum"
+	"cfiber/internal/dto"
+	"cfiber/internal/service"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
+	platformPayment "cfiber/pkg/payment"
+	"cfiber/pkg/payment/enum"
 )
 
 // PaymentHandler 承接支付渠道的 Webhook 异步通知与客户端同步跳转。

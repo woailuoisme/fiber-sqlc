@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
 )
 
 // testHash 是占位口令哈希，仓储层不校验 argon2id 本身。
@@ -101,7 +101,7 @@ func TestRepositoryUserLifecycle(t *testing.T) {
 	})
 
 	t.Run("不存在的用户返回 ErrNoRows", func(t *testing.T) {
-		_, err := db.Queries(ctx).GetUserByEmail(ctx, sqlc.GetUserByEmailParams{Email: "nobody@cgin.local"})
+		_, err := db.Queries(ctx).GetUserByEmail(ctx, sqlc.GetUserByEmailParams{Email: "nobody@cfiber.local"})
 		assert.ErrorIs(t, err, pgx.ErrNoRows)
 	})
 

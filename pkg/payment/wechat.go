@@ -12,9 +12,9 @@ import (
 	"github.com/go-pay/gopay/wechat/v3"
 	"github.com/rs/zerolog"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/payment/enum"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/payment/enum"
 )
 
 // 微信支付币种常量。

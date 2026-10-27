@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"cgin/internal/user"
+	"cfiber/internal/user"
 )
 
 // TestNormaliseSortUsesWhitelist 校验排序只认白名单字段，注入尝试被丢弃。

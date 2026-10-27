@@ -10,7 +10,7 @@ import (
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/ThreeDotsLabs/watermill/pubsub/gochannel"
 
-	"cgin/internal/config"
+	"cfiber/internal/config"
 )
 
 // DriverGoChannel 代表基于进程内内存通道的默认事件传输驱动。

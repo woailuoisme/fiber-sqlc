@@ -9,8 +9,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // DriverFactory 定义邮件驱动构造函数签名。

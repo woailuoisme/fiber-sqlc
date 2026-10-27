@@ -6,8 +6,8 @@ import (
 
 	"github.com/aarondl/opt/omitnull"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
 )
 
 // FieldSet 是客户端与后台管理共用的可更新档案字段集合。

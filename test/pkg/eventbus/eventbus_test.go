@@ -17,10 +17,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/goleak"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/eventbus"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/eventbus"
+	"cfiber/pkg/logger"
 )
 
 func TestMain(m *testing.M) {

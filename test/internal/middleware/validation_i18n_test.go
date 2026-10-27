@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/middleware/global"
-	appuser "cgin/internal/user"
-	"cgin/pkg/errs"
-	"cgin/pkg/i18n"
+	"cfiber/internal/config"
+	"cfiber/internal/middleware/global"
+	appuser "cfiber/internal/user"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/i18n"
 )
 
 // TestValidationMessageTranslation 验证以语言包键表达的字段级校验文案，

@@ -13,11 +13,11 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/spf13/cobra"
 
-	"cgin/internal/console/core"
-	"cgin/internal/job"
-	"cgin/pkg/cache"
-	"cgin/pkg/mailer"
-	"cgin/pkg/queue"
+	"cfiber/internal/console/core"
+	"cfiber/internal/job"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/mailer"
+	"cfiber/pkg/queue"
 )
 
 // QueueWorkOptions 封装 queue:work 命令的参数与依赖容器。

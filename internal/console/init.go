@@ -15,9 +15,9 @@ import (
 	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"
 
-	"cgin/internal/config"
-	"cgin/internal/console/core"
-	"cgin/internal/database/seeders"
+	"cfiber/internal/config"
+	"cfiber/internal/console/core"
+	"cfiber/internal/database/seeders"
 )
 
 var (
@@ -59,7 +59,7 @@ func (o *AppInitOptions) Validate() error {
 // Run 依次执行全量初始化流水线。
 func (o *AppInitOptions) Run(ctx context.Context) error {
 	streams := o.Factory.IOStreams()
-	core.TitleTo(streams.Out, "Initializing cgin application environment...")
+	core.TitleTo(streams.Out, "Initializing cfiber application environment...")
 
 	// 1. 初始化 .env 与 JWT/Session 双密钥
 	envMap, err := o.initEnv(streams)
@@ -157,7 +157,7 @@ func (o *AppInitOptions) initEnv(streams *core.IOStreams) (map[string]string, er
 	return envMap, nil
 }
 
-// initDatabases 探查并自动创建所需的目标 PostgreSQL 数据库（cgin, atlas_dev, cgin_test）。
+// initDatabases 探查并自动创建所需的目标 PostgreSQL 数据库（cfiber, atlas_dev, cfiber_test）。
 func (o *AppInitOptions) initDatabases(ctx context.Context, streams *core.IOStreams, envMap map[string]string) error {
 	if o.SkipDB {
 		core.InfoTo(streams.Out, "Step 2/5: Skipping PostgreSQL database creation (--skip-db)")

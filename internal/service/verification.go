@@ -15,12 +15,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"cgin/internal/config"
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // 一次性凭据的底层存储用途前缀（写入 verification.identifier），使同一邮箱的不同用途在库中互不干扰。

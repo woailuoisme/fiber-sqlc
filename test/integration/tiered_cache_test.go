@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/pkg/cache"
+	"cfiber/internal/config"
+	"cfiber/pkg/cache"
 )
 
 // TestTieredCache_MultiInstance_Invalidation 验证两实例节点在真实 Redis 上的 L1 读与主动自失效通知。

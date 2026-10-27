@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"cgin/internal/database/sqlc"
+	"cfiber/internal/database/sqlc"
 )
 
 // ErrNotInitialised 表示数据访问入口未被装配（连接池缺失）。

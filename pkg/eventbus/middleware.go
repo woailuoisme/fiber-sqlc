@@ -11,8 +11,8 @@ import (
 	"github.com/rs/zerolog"
 	"go.opentelemetry.io/otel/trace"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // 事件消息 Metadata 标准键名。

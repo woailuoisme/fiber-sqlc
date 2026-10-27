@@ -6,8 +6,8 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"golang.org/x/text/language"
 
-	"cgin/message"
-	"cgin/pkg/i18n"
+	"cfiber/message"
+	"cfiber/pkg/i18n"
 )
 
 // I18n 【全局中间件】基于 gin-contrib/i18n 统一提供多语言嗅探、语言协商与上下文注入。

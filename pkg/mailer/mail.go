@@ -10,9 +10,9 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/oops"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // Message 包含单封或批量邮件的收发元数据、正文与结构化附件。

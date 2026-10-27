@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/bootstrap"
-	"cgin/internal/config"
-	"cgin/pkg/geoip"
-	"cgin/pkg/mailer"
+	"cfiber/internal/bootstrap"
+	"cfiber/internal/config"
+	"cfiber/pkg/geoip"
+	"cfiber/pkg/mailer"
 )
 
 func TestNewInjector_RegistrationAndClone(t *testing.T) {
-	t.Setenv("DB_URL", "postgres://app:secret@127.0.0.1:5432/cgin?sslmode=disable")
+	t.Setenv("DB_URL", "postgres://app:secret@127.0.0.1:5432/cfiber?sslmode=disable")
 	t.Setenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 	t.Setenv("JWT_SECRET", "12345678901234567890123456789012")
 	t.Setenv("SESSION_SECRET", "12345678901234567890123456789012")
@@ -77,7 +77,7 @@ func TestApplication_Shutdown(t *testing.T) {
 }
 
 func TestNewInjector_GeoIPService(t *testing.T) {
-	t.Setenv("DB_URL", "postgres://app:secret@127.0.0.1:5432/cgin?sslmode=disable")
+	t.Setenv("DB_URL", "postgres://app:secret@127.0.0.1:5432/cfiber?sslmode=disable")
 	t.Setenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 	t.Setenv("JWT_SECRET", "12345678901234567890123456789012")
 	t.Setenv("SESSION_SECRET", "12345678901234567890123456789012")

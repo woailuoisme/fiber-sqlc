@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/pkg/search"
+	"cfiber/internal/config"
+	"cfiber/pkg/search"
 )
 
 func TestNoopClientContract(t *testing.T) {

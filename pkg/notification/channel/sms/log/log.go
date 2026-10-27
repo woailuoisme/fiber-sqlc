@@ -7,8 +7,8 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"cgin/pkg/logger"
-	"cgin/pkg/notification/channel/sms"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/notification/channel/sms"
 )
 
 // Driver 结构化日志短信驱动。

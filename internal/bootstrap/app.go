@@ -9,8 +9,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
-	"cgin/internal/config"
-	"cgin/pkg/eventbus"
+	"cfiber/internal/config"
+	"cfiber/pkg/eventbus"
 )
 
 // Application 聚合装配完成的 HTTP 引擎与依赖容器。

@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
 )
 
 // UserFixtureBuilder 负责以链式 DSL 构造结构合法的 User 测试实体。

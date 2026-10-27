@@ -37,57 +37,57 @@ func TestLayerDependenciesFlowDownward(t *testing.T) {
 	rules := []layerRule{
 		{
 			dir:     "pkg",
-			forbids: []string{"cgin/shared", "cgin/internal/database", "cgin/internal/dto", "cgin/internal/handler", "cgin/internal/service", "cgin/internal/route", "cgin/internal/middleware", "cgin/internal/bootstrap", "cgin/internal/console"},
-			reason:  "pkg 是纯基础设施层，严禁反向依赖 internal 业务层或 shared 业务内核（仅 cgin/internal/config 例外）",
+			forbids: []string{"cfiber/shared", "cfiber/internal/database", "cfiber/internal/dto", "cfiber/internal/handler", "cfiber/internal/service", "cfiber/internal/route", "cfiber/internal/middleware", "cfiber/internal/bootstrap", "cfiber/internal/console"},
+			reason:  "pkg 是纯基础设施层，严禁反向依赖 internal 业务层或 shared 业务内核（仅 cfiber/internal/config 例外）",
 		},
 		{
 			dir:     "internal/dto",
-			forbids: []string{"cgin/internal/handler", "cgin/internal/service", "cgin/internal/route", "cgin/internal/middleware"},
+			forbids: []string{"cfiber/internal/handler", "cfiber/internal/service", "cfiber/internal/route", "cfiber/internal/middleware"},
 			reason:  "dto 是传输契约层，只能被上层引用，严禁反向依赖 handler/service/route/middleware",
 		},
 		{
 			dir:     "internal/service",
-			forbids: []string{"cgin/internal/handler", "cgin/internal/route"},
+			forbids: []string{"cfiber/internal/handler", "cfiber/internal/route"},
 			reason:  "service 是用例层，严禁反向依赖 handler 与 route",
 		},
 		{
 			dir:     "internal/handler",
-			forbids: []string{"cgin/internal/route"},
+			forbids: []string{"cfiber/internal/route"},
 			reason:  "handler 是传输适配层，路由注册必须留在 internal/route",
 		},
 		{
 			dir:     "internal/user",
-			forbids: []string{"cgin/internal/dto", "cgin/internal/handler", "cgin/internal/service", "cgin/internal/route", "cgin/internal/middleware", "cgin/internal/bootstrap", "cgin/internal/console"},
+			forbids: []string{"cfiber/internal/dto", "cfiber/internal/handler", "cfiber/internal/service", "cfiber/internal/route", "cfiber/internal/middleware", "cfiber/internal/bootstrap", "cfiber/internal/console"},
 			reason:  "user 是用户视图与仓储内核，被 dto/service/export 引用，严禁反向依赖传输层、用例层或装配层",
 		},
 		{
 			dir:     "internal/media",
-			forbids: []string{"cgin/internal/dto", "cgin/internal/handler", "cgin/internal/service", "cgin/internal/route", "cgin/internal/middleware", "cgin/internal/bootstrap", "cgin/internal/console"},
+			forbids: []string{"cfiber/internal/dto", "cfiber/internal/handler", "cfiber/internal/service", "cfiber/internal/route", "cfiber/internal/middleware", "cfiber/internal/bootstrap", "cfiber/internal/console"},
 			reason:  "media 是媒体处理内核，仅由装配层注入，严禁反向依赖传输层、用例层或装配层",
 		},
 		{
 			dir:     "internal/export",
-			forbids: []string{"cgin/internal/dto", "cgin/internal/handler", "cgin/internal/service", "cgin/internal/route", "cgin/internal/middleware", "cgin/internal/bootstrap", "cgin/internal/console"},
+			forbids: []string{"cfiber/internal/dto", "cfiber/internal/handler", "cfiber/internal/service", "cfiber/internal/route", "cfiber/internal/middleware", "cfiber/internal/bootstrap", "cfiber/internal/console"},
 			reason:  "export 是领域导出内核，被 service 引用，严禁反向依赖传输层、用例层或装配层",
 		},
 		{
 			dir:     "internal/import",
-			forbids: []string{"cgin/internal/dto", "cgin/internal/handler", "cgin/internal/service", "cgin/internal/route", "cgin/internal/middleware", "cgin/internal/bootstrap", "cgin/internal/console"},
+			forbids: []string{"cfiber/internal/dto", "cfiber/internal/handler", "cfiber/internal/service", "cfiber/internal/route", "cfiber/internal/middleware", "cfiber/internal/bootstrap", "cfiber/internal/console"},
 			reason:  "import 是领域导入内核，被 service 引用，严禁反向依赖传输层、用例层或装配层",
 		},
 		{
 			dir:     "internal/event",
-			forbids: []string{"cgin/internal/database", "cgin/internal/dto", "cgin/internal/handler", "cgin/internal/service", "cgin/internal/route", "cgin/internal/middleware", "cgin/internal/bootstrap", "cgin/internal/console"},
+			forbids: []string{"cfiber/internal/database", "cfiber/internal/dto", "cfiber/internal/handler", "cfiber/internal/service", "cfiber/internal/route", "cfiber/internal/middleware", "cfiber/internal/bootstrap", "cfiber/internal/console"},
 			reason:  "event 是纯领域事件载荷层，严禁依赖数据库、传输层、用例层或装配层",
 		},
 		{
 			dir:     "internal/listener",
-			forbids: []string{"cgin/internal/dto", "cgin/internal/handler", "cgin/internal/service", "cgin/internal/route", "cgin/internal/middleware", "cgin/internal/bootstrap", "cgin/internal/console"},
+			forbids: []string{"cfiber/internal/dto", "cfiber/internal/handler", "cfiber/internal/service", "cfiber/internal/route", "cfiber/internal/middleware", "cfiber/internal/bootstrap", "cfiber/internal/console"},
 			reason:  "listener 是领域事件监听层，仅由装配层挂载，严禁反向依赖传输层、用例层或装配层",
 		},
 		{
 			dir:     "shared",
-			forbids: []string{"cgin/internal"},
+			forbids: []string{"cfiber/internal"},
 			reason:  "shared 已收敛为纯静态资产层（仅 apidocs），严禁依赖 internal 任何包；业务内核一律沉入 internal",
 		},
 	}

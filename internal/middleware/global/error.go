@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	govalidator "github.com/go-playground/validator/v10"
 
-	"cgin/pkg/errs"
+	"cfiber/pkg/errs"
 )
 
 // ErrorHandler 把 c.Errors 渲染为统一 JSON 错误信封，并把校验明细翻译成请求语言。

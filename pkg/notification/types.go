@@ -2,7 +2,7 @@
 package notification
 
 import (
-	"cgin/pkg/notification/contract"
+	"cfiber/pkg/notification/contract"
 )
 
 const (

@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/console"
-	"cgin/internal/console/core"
+	"cfiber/internal/console"
+	"cfiber/internal/console/core"
 )
 
 // TestRootCommand_Registration 验证所有预期的 CLI 命令均已按纯冒号方式注册，并正确分配到对应的命名空间分组。

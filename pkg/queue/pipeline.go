@@ -10,8 +10,8 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // Handler 描述任务执行的原子处理函数契约 (SRP)。

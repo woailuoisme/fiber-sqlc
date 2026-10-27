@@ -6,8 +6,8 @@ import (
 
 	govalidator "github.com/go-playground/validator/v10"
 
-	"cgin/internal/database/sqlc"
-	"cgin/pkg/validator"
+	"cfiber/internal/database/sqlc"
+	"cfiber/pkg/validator"
 )
 
 // ValidationOptions 返回用户模块贡献给校验器的规则。

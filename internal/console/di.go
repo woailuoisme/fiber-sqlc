@@ -12,7 +12,7 @@ import (
 	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"
 
-	"cgin/internal/console/core"
+	"cfiber/internal/console/core"
 )
 
 // DITreeOptions 封装 di:tree 命令的参数与依赖容器。

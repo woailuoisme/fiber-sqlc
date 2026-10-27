@@ -7,13 +7,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/event"
-	"cgin/internal/job"
-	"cgin/internal/listener"
-	"cgin/pkg/eventbus"
-	"cgin/pkg/logger"
-	"cgin/pkg/queue"
+	"cfiber/internal/config"
+	"cfiber/internal/event"
+	"cfiber/internal/job"
+	"cfiber/internal/listener"
+	"cfiber/pkg/eventbus"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/queue"
 )
 
 func TestAuthEventListener(t *testing.T) {

@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/internal/user"
-	"cgin/pkg/authentication"
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/internal/user"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
 )
 
 const testSecret = "0123456789abcdef0123456789abcdef"
@@ -56,7 +56,7 @@ func (s *mockBlacklistStore) Exists(_ context.Context, key string) (bool, error)
 func newTestTokenIssuer(accessTTL time.Duration) *authentication.TokenIssuer {
 	return authentication.NewTokenIssuer(config.JWTConfig{
 		Secret:     testSecret,
-		Issuer:     "cgin-test",
+		Issuer:     "cfiber-test",
 		AccessTTL:  accessTTL,
 		RefreshTTL: 24 * time.Hour,
 	}, nil)
@@ -65,7 +65,7 @@ func newTestTokenIssuer(accessTTL time.Duration) *authentication.TokenIssuer {
 func newTestTokenIssuerWithBlacklist(accessTTL time.Duration, store authentication.BlacklistStore) *authentication.TokenIssuer {
 	return authentication.NewTokenIssuer(config.JWTConfig{
 		Secret:     testSecret,
-		Issuer:     "cgin-test",
+		Issuer:     "cfiber-test",
 		AccessTTL:  accessTTL,
 		RefreshTTL: 24 * time.Hour,
 	}, store)

@@ -18,9 +18,9 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/samber/lo"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/resilience"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/resilience"
 )
 
 // defaultS3Region 是 minio 的签名要求与 S3 兼容实现的默认值不一致时的兜底：

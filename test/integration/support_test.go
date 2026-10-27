@@ -19,9 +19,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/bootstrap"
-	"cgin/internal/config"
-	"cgin/internal/database"
+	"cfiber/internal/bootstrap"
+	"cfiber/internal/config"
+	"cfiber/internal/database"
 )
 
 func init() { gin.SetMode(gin.TestMode) }
@@ -37,7 +37,7 @@ var appStorageRoot string
 
 // TestMain 准备进程级共享资源并在退出前回收。
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "cgin-integration-storage-")
+	dir, err := os.MkdirTemp("", "cfiber-integration-storage-")
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "failed to create integration storage root: %v\n", err)
 		os.Exit(1)
@@ -94,7 +94,7 @@ func openTestDB(t *testing.T) *database.DB {
 	cfg.Database.MaxOpenConns = 4
 	cfg.Database.MinConns = 0
 
-	pool, err := database.Open(t.Context(), cfg.Database, "cgin-tests")
+	pool, err := database.Open(t.Context(), cfg.Database, "cfiber-tests")
 	require.NoError(t, err)
 	db := database.NewDB(pool)
 	t.Cleanup(func() { _ = db.Close() })
@@ -226,7 +226,7 @@ func errorMessages(body map[string]any, field string) []string {
 
 // uniqueEmail 生成不会与既有数据冲突的邮箱。
 func uniqueEmail() string {
-	return fmt.Sprintf("it+%d@cgin.local", time.Now().UnixNano())
+	return fmt.Sprintf("it+%d@cfiber.local", time.Now().UnixNano())
 }
 
 // uniqueUsername 生成符合字符集规范的唯一用户名。

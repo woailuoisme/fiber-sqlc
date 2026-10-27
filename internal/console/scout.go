@@ -9,9 +9,9 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 
-	"cgin/internal/console/core"
-	"cgin/internal/index"
-	"cgin/pkg/search"
+	"cfiber/internal/console/core"
+	"cfiber/internal/index"
+	"cfiber/pkg/search"
 )
 
 // ScoutImportOptions 封装 scout:import 命令的参数与依赖容器。

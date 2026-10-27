@@ -1,6 +1,6 @@
 package dto
 
-import "cgin/pkg/ready"
+import "cfiber/pkg/ready"
 
 const (
 	// StatusReady、StatusDegraded 与 StatusNotReady 是就绪探针的状态值。

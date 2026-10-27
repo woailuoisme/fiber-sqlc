@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/console"
-	"cgin/internal/console/core"
+	"cfiber/internal/console"
+	"cfiber/internal/console/core"
 )
 
 func TestAppInitCommand_CreationFromExample(t *testing.T) {
@@ -173,5 +173,5 @@ func TestAppInitCommand_CLIInvocation(t *testing.T) {
 
 	err := cmd.ExecuteContext(context.Background())
 	require.NoError(t, err)
-	assert.Contains(t, buf.String(), "Initializing cgin application environment")
+	assert.Contains(t, buf.String(), "Initializing cfiber application environment")
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
-	"cgin/internal/config"
-	"cgin/pkg/geoip"
+	"cfiber/internal/config"
+	"cfiber/pkg/geoip"
 )
 
 func TestMain(m *testing.M) {

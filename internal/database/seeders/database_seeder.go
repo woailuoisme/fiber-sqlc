@@ -3,7 +3,7 @@ package seeders
 import (
 	"context"
 
-	"cgin/internal/database"
+	"cfiber/internal/database"
 )
 
 // DatabaseSeeder 是系统总入口播种器，负责按拓扑依赖顺序编排所有子播种器。

@@ -1,4 +1,4 @@
-# cgin - AI Coding Agent 研发与协作总纲 (AGENTS.md)
+# cfiber - AI Coding Agent 研发与协作总纲 (AGENTS.md)
 
 本文档是针对接入本仓库的所有 AI Coding Agent（如 Claude Code, Antigravity, Cursor, Windsurf 等）的核心认知与工程操作总纲。Agent 在本仓库执行任何探索、设计、编码、重构、审查或排错任务时，**必须严格遵守本规范及所索引的专责规则**。
 
@@ -6,7 +6,7 @@
 
 ## 1. 项目概览与技术拓扑 (Project Overview & Tech Stack)
 
-`cgin` 是一个基于现代化 Go 语言规范构建的企业级高并发 RESTful Web API 骨架。
+`cfiber` 是一个基于现代化 Go 语言规范构建的企业级高并发 RESTful Web API 骨架。
 
 - **运行时与语言规范**：[Go 1.27+](file:///Users/seaside/Projects/backend/go/gin-sqlc/go.mod) 现代标准，开启严格并发安全与类型安全。
 - **Web 引擎**：[Gin](file:///Users/seaside/Projects/backend/go/gin-sqlc/internal/bootstrap/engine.go) (`github.com/gin-gonic/gin`)，统一错误恢复、链路追踪、CORS 与限流中间件。
@@ -41,7 +41,7 @@
 | | `just work [ARGS]` | 直接运行 Worker 服务（如 `just work -q high:3,default:1`）。 |
 | | `just cli [ARGS]` | 运行 CLI 控制台命令（如 `just cli route:list` 或 `just cli make:crud blog`，支持别名 `just artisan`）。 |
 | | `just init [ARGS]` | 一键全流程环境初始化（.env、双密钥、Postgres 数据库创建、Atlas 迁移、初始播种与 S3 桶检测）。 |
-| | `just build` | 编译可执行文件至 `bin/cgin`，自动注入 version/commit/date 元数据。 |
+| | `just build` | 编译可执行文件至 `bin/cfiber`，自动注入 version/commit/date 元数据。 |
 | **静态检查与格式化** | `just fmt` | 代码自动格式化并就地改写文件（基于 `golangci-lint fmt`）。 |
 | | `just fmt-check` | 仅检查格式是否规范，不改写文件。 |
 | | `just lint` | 静态检查（严格保持 0 警告 0 报错）。 |
@@ -189,7 +189,7 @@ test/                           # 外部测试包（测试代码与业务逻辑�
    - **绝对严禁将 `pkg/errs` 迁入 `shared/`**：防止 `render.go` 将 `gin.Context` 与 Web 传输协议污染进纯领域共享内核，同时杜绝 `storage`、`mailer`、`queue` 等底层技术原子反向依赖业务共享包。
    - 业务错误码（如 `AUTH_*`、`PAYMENT_*`）作为系统对外契约常量统一集中于 `pkg/errs/codes.go`，由状态码映射字典 `statuses` 集中内聚管理，避免分散配置导致的契约漂移。
 6. **常量与枚举作用域规约与就近内聚原则 (`internal/enum`)**：
-   - **核心领域枚举集中于 `internal/enum`**：仅当枚举属于全系统跨垂直切片共享的**核心业务领域实体概念**（如 `Role`、`UserStatus`、`OTPType`、`ProviderID`）时，方可在 `internal/enum` 中定义，且必须使用强类型 `type X string` 并提供 `IsValid()` / `String()` 等纯粹契约。该包是不导入任何 `cgin/` 内部包的零依赖叶子包，`internal/` 各层统一引用这一唯一来源；`pkg/` 与 `shared/` 严禁依赖它。
+   - **核心领域枚举集中于 `internal/enum`**：仅当枚举属于全系统跨垂直切片共享的**核心业务领域实体概念**（如 `Role`、`UserStatus`、`OTPType`、`ProviderID`）时，方可在 `internal/enum` 中定义，且必须使用强类型 `type X string` 并提供 `IsValid()` / `String()` 等纯粹契约。该包是不导入任何 `cfiber/` 内部包的零依赖叶子包，`internal/` 各层统一引用这一唯一来源；`pkg/` 与 `shared/` 严禁依赖它。
    - **严禁「集中式常量垃圾桶」反模式 (No God Enum / No Centralized Technical Constants)**：严禁将任何特定技术实现常量、中间件键名、基础设施细节直接堆入 `internal/enum`：
      - **Gin Context Key**：必须就近定义在对应传输层中间件或认证包内部，推荐使用非导出类型（如 `type authCtxKey struct{}`）或私有常量，通过强类型 Helper 函数（如 `auth.FromContext(c)`）对外暴露存取，严禁全局暴露原生 Context 字符串键。
      - **Cache Key / Redis 前缀**：必须就近封装在具体的 Cache Repository 或 Platform Cache 内部，外部调用方通过高阶仓储方法存取，严禁将原始键名前缀向外部全局扩散。
@@ -236,7 +236,7 @@ test/                           # 外部测试包（测试代码与业务逻辑�
 
 ### 4.4 结构化日志纪律与 fmt 输出禁令 (Structured Logging & No fmt.Print)
 - **绝对严禁 `fmt.Print*` 输出**：核心运行时代码与业务逻辑层（`internal/` 目录除 `internal/console/` 外）**严禁使用 `fmt.Print`、`fmt.Println`、`fmt.Printf` 或传统标准库 `log` 输出运行日志**。
-- **全链路结构化日志**：所有服务运行事件、告警、安全审计与排错记录必须统一通过 `cgin/pkg/logger` 输出，优先使用 `logger.FromContext(ctx)` 确保请求级 `request_id` 全链路串联。
+- **全链路结构化日志**：所有服务运行事件、告警、安全审计与排错记录必须统一通过 `cfiber/pkg/logger` 输出，优先使用 `logger.FromContext(ctx)` 确保请求级 `request_id` 全链路串联。
 - **合法例外场景**：
   - 允许使用 `fmt.Sprintf`、`fmt.Errorf` 等纯内存字符串格式化与错误包装函数。
   - 命令行 CLI 交互层（`cmd/api` 与 `internal/console/`）允许使用 `fmt` 或终端美化库向用户控制台输出帮助文本与退出错误。
@@ -339,11 +339,11 @@ test/                           # 外部测试包（测试代码与业务逻辑�
 系统采用前后台严格隔离的双 OpenAPI / Scalar 文档架构：
 1. **客户端文档 (`/docs`)**：
    - 宿主页挂载在 `/docs`，规范接口为 `/docs/openapi.json`（对应静态文件 `shared/apidocs/swagger.json`）。
-   - 根信息在 `cmd/api/main.go` 中声明（Title 为 `cgin API`）。
+   - 根信息在 `cmd/api/main.go` 中声明（Title 为 `cfiber API`）。
    - **严格收录范围**：仅包含客户端自助与认证端点（`auth`、`profile`、`realtime`）。分层扁平化后同层包混装两侧端点，收录范围改由 Swagger Tag 白名单收敛（`认证中心,个人资料,实时通信`），并辅以 `--exclude internal/handler/admin,...` 降低解析开销。
 2. **管理端文档 (`/docs/admin`)**：
    - 宿主页挂载在 `/docs/admin`，规范接口为 `/docs/admin/openapi.json`（对应静态文件 `shared/apidocs/admin_swagger.json`）。
-   - 根信息在 `cmd/api/admin_doc.go` 中声明（Title 为 `cgin Admin API`）。
+   - 根信息在 `cmd/api/admin_doc.go` 中声明（Title 为 `cfiber Admin API`）。
    - **严格收录范围**：仅收录管理端 API（如 `internal/route/admin`、`internal/handler/admin`），收敛手段同为 Tag 白名单（`用户管理,管理员认证`）。新增端点必须写 `@Tags`，否则会同时从两套文档消失——该约束由 `test/shared/apidocs` 的注解覆盖测试守门。
    - **解除旧约束**：取消原 ADR-0005 中“管理端不添加 swag 注解”的旧约束，管理端 Handler 与 DTO 必须全量规范书写 Swag 注解。
 3. **环境与访问控制**：

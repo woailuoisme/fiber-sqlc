@@ -13,9 +13,9 @@ import (
 	"github.com/centrifugal/gocent/v3"
 	"github.com/samber/oops"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/resilience"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/resilience"
 )
 
 // Config 为 config.CentrifugoConfig 的类型别名，消除重复定义并直接复用统一配置结构。

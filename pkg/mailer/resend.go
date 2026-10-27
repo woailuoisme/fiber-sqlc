@@ -13,10 +13,10 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/oops"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
-	"cgin/pkg/resilience"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/resilience"
 )
 
 // resendDriver 基于 Resend 官方 SDK 实现的现代化邮件发送驱动。
@@ -41,7 +41,7 @@ func newResendDriver(cfg config.MailConfig, log *zerolog.Logger) (*resendDriver,
 	})
 
 	client := resend.NewCustomClient(httpClient, apiKey)
-	client.UserAgent = "cgin-mailer/1.0"
+	client.UserAgent = "cfiber-mailer/1.0"
 
 	baseURLStr := strings.TrimRight(cmp.Or(strings.TrimSpace(cfg.Resend.BaseURL), "https://api.resend.com"), "/") + "/"
 	parsedURL, err := url.Parse(baseURLStr)

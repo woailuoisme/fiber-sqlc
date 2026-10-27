@@ -26,8 +26,8 @@ import (
 	"github.com/samber/oops"
 	_ "golang.org/x/image/webp"
 
-	"cgin/internal/config"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/pkg/errs"
 )
 
 // Format 指定输出图像格式。
@@ -228,7 +228,7 @@ func NewWithStorage(imgCfg config.ImgproxyConfig, storageCfg config.StorageConfi
 
 	restyClient := resty.New().
 		SetTimeout(2*time.Second).
-		SetHeader("User-Agent", "cgin-imgproxy-client")
+		SetHeader("User-Agent", "cfiber-imgproxy-client")
 
 	return &client{
 		baseURL:     trimmedURL,

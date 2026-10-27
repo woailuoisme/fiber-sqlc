@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/middleware/global"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/internal/middleware/global"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // TestAccessLog404SingleWarn 验证 404 请求仅输出一条 WARN 访问日志，

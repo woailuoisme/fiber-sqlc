@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/bootstrap"
-	"cgin/internal/console"
-	"cgin/internal/console/core"
+	"cfiber/internal/bootstrap"
+	"cfiber/internal/console"
+	"cfiber/internal/console/core"
 )
 
 func TestDITreeOptions_Run(t *testing.T) {
@@ -31,6 +31,6 @@ func TestDITreeOptions_Run(t *testing.T) {
 
 	output := out.String()
 	assert.Contains(t, output, "Dependency Injection Container")
-	assert.Contains(t, output, "cgin/internal/config.Config")
+	assert.Contains(t, output, "cfiber/internal/config.Config")
 	assert.Contains(t, output, "Total services registered:")
 }

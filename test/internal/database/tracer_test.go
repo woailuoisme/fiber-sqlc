@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"cgin/internal/database"
+	"cfiber/internal/database"
 )
 
 // TestQueryFingerprintIgnoresFormatting 校验指纹只受语句语义影响，与空白排版无关。

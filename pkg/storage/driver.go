@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"cgin/internal/config"
+	"cfiber/internal/config"
 )
 
 // createDriver 根据配置实例化对应的存储驱动。

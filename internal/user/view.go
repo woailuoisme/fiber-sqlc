@@ -3,8 +3,8 @@ package user
 import (
 	"time"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
 )
 
 // Profile 是用户档案视图：客户端与管理端共用的唯一字段来源。

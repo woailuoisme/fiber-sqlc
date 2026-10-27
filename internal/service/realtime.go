@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"time"
 
-	"cgin/internal/config"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/dto"
-	appuser "cgin/internal/user"
-	"cgin/pkg/errs"
-	platformRealtime "cgin/pkg/realtime"
+	"cfiber/internal/config"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/dto"
+	appuser "cfiber/internal/user"
+	"cfiber/pkg/errs"
+	platformRealtime "cfiber/pkg/realtime"
 )
 
 // userRoleReader 声明签发连接凭据所需的用户角色读取能力。

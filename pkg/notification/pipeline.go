@@ -8,10 +8,10 @@ import (
 
 	"github.com/samber/oops"
 
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
-	"cgin/pkg/notification/contract"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
+	"cfiber/pkg/notification/contract"
 )
 
 // SendFunc 定义通知投递管道处理函数契约。

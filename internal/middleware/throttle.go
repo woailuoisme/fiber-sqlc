@@ -7,10 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"cgin/pkg/authentication"
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
-	"cgin/pkg/logger"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/logger"
 )
 
 // Tier 定义业务限流预设档位。

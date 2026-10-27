@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/middleware"
-	"cgin/pkg/authorization"
+	"cfiber/internal/middleware"
+	"cfiber/pkg/authorization"
 )
 
 // TestAuthzMiddleware_RESTfulRules 验证 gin-contrib/authz 基于角色、路径与 HTTP 方法执行 RESTful 访问控制。

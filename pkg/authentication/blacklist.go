@@ -9,7 +9,7 @@ import (
 
 	"github.com/samber/hot"
 
-	"cgin/pkg/cache"
+	"cfiber/pkg/cache"
 )
 
 const (

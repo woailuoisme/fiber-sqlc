@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/enum"
-	"cgin/internal/user"
+	"cfiber/internal/enum"
+	"cfiber/internal/user"
 )
 
 // TestPatchFromAdminFieldSet 验证封禁布尔状态与账号状态的协同一致性。

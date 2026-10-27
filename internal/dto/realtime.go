@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	platformRealtime "cgin/pkg/realtime"
+	platformRealtime "cfiber/pkg/realtime"
 )
 
 // TokenResource 描述客户端连接 Centrifugo 所需的 JWT 凭据与连接元信息。

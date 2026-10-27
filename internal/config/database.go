@@ -23,7 +23,7 @@ type DatabaseConfig struct {
 
 // SeedConfig 描述初始管理员播种凭据。
 type SeedConfig struct {
-	AdminEmail    string `env:"SEED_ADMIN_EMAIL" envDefault:"admin@cgin.local"`
+	AdminEmail    string `env:"SEED_ADMIN_EMAIL" envDefault:"admin@cfiber.local"`
 	AdminPassword string `env:"SEED_ADMIN_PASSWORD"`
 	AdminName     string `env:"SEED_ADMIN_NAME" envDefault:"Administrator"`
 }

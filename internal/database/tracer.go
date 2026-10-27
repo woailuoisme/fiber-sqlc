@@ -14,8 +14,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
 
-	"cgin/internal/config"
-	"cgin/pkg/logger"
+	"cfiber/internal/config"
+	"cfiber/pkg/logger"
 )
 
 // queryTrace 承载单条 SQL 的起始时间与语句文本。

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/pkg/i18n"
+	"cfiber/internal/config"
+	"cfiber/pkg/i18n"
 )
 
 // newTranslator 装载内嵌语言包，默认语言为 en。
@@ -121,14 +121,14 @@ func TestMailRendersSubjectAndBody(t *testing.T) {
 	subject, body := translator.Mail("en", "reset_otp", map[string]string{
 		"Name": "Alice", "Code": "123456", "TTL": "10",
 	})
-	assert.Equal(t, "Your cgin password reset code", subject)
+	assert.Equal(t, "Your cfiber password reset code", subject)
 	assert.Contains(t, body, "123456")
 	assert.Contains(t, body, "10 minutes")
 
 	zhSubject, zhBody := translator.Mail("zh-CN", "reset_otp", map[string]string{
 		"Name": "小明", "Code": "654321", "TTL": "10",
 	})
-	assert.Equal(t, "你的 cgin 密码重置验证码", zhSubject)
+	assert.Equal(t, "你的 cfiber 密码重置验证码", zhSubject)
 	assert.Contains(t, zhBody, "654321")
 }
 

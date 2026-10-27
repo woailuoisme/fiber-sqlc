@@ -11,7 +11,7 @@ import (
 	"errors"
 	"fmt"
 
-	"cgin/pkg/errs"
+	"cfiber/pkg/errs"
 )
 
 // Decrypt 使用 SessionKey 与 IV 解密微信小程序敏感数据（AES-128-CBC + PKCS#7）。

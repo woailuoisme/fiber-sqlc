@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"cgin/internal/bootstrap"
+	"cfiber/internal/bootstrap"
 )
 
 // ServeOptions 持有 HTTP 服务启动命令的配置与依赖容器。

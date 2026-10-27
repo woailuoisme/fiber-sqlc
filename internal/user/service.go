@@ -8,11 +8,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/samber/lo"
 
-	"cgin/internal/database"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/pkg/errs"
-	"cgin/pkg/hasher"
+	"cfiber/internal/database"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/hasher"
 )
 
 // Scope 声明档案更新的权限作用域。

@@ -18,13 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/dto"
-	"cgin/internal/enum"
-	"cgin/internal/handler"
-	"cgin/internal/service"
-	"cgin/pkg/authentication"
-	platformRealtime "cgin/pkg/realtime"
+	"cfiber/internal/config"
+	"cfiber/internal/dto"
+	"cfiber/internal/enum"
+	"cfiber/internal/handler"
+	"cfiber/internal/service"
+	"cfiber/pkg/authentication"
+	platformRealtime "cfiber/pkg/realtime"
 )
 
 func generateTestSig(secret string, body []byte) string {

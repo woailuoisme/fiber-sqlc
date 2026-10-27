@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/job"
-	"cgin/pkg/mailer"
-	"cgin/pkg/queue"
+	"cfiber/internal/job"
+	"cfiber/pkg/mailer"
+	"cfiber/pkg/queue"
 )
 
 type mockMailer struct {
@@ -71,5 +71,5 @@ func TestWelcomeEmailJobExecution(t *testing.T) {
 	require.Len(t, mailMock.sent, 1)
 	assert.Equal(t, []string{"alex@example.com"}, mailMock.sent[0].To)
 	assert.Contains(t, mailMock.sent[0].Body, "Alex")
-	assert.Contains(t, mailMock.sent[0].Body, "Welcome to cgin")
+	assert.Contains(t, mailMock.sent[0].Body, "Welcome to cfiber")
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"cgin/pkg/logger"
+	"cfiber/pkg/logger"
 )
 
 // paymentLogPlaceholder 是 SDK 传入空日志参数时的占位消息。

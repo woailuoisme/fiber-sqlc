@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"cgin/internal/database"
-	"cgin/pkg/logger"
+	"cfiber/internal/database"
+	"cfiber/pkg/logger"
 )
 
 // Seeder 是数据播种器必须实现的统一接口。

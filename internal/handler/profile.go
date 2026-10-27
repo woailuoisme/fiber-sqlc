@@ -3,10 +3,10 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 
-	"cgin/internal/dto"
-	"cgin/internal/service"
-	"cgin/pkg/authentication"
-	"cgin/pkg/response"
+	"cfiber/internal/dto"
+	"cfiber/internal/service"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/response"
 )
 
 // ProfileHandler 是本人档案端点的 HTTP 适配层。

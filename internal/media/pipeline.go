@@ -19,8 +19,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/samber/oops"
 
-	"cgin/pkg/errs"
-	"cgin/pkg/storage"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/storage"
 )
 
 // defaultOctetStreamMime 默认通用二进制流 MIME 类型。

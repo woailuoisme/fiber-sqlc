@@ -5,10 +5,10 @@ import (
 	"errors"
 	"strings"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/pkg/errs"
-	"cgin/pkg/validator"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/validator"
 )
 
 // RegisterParams 描述创建一个带本地口令凭据的用户所需的输入。

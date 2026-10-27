@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"cgin/pkg/errs"
+	"cfiber/pkg/errs"
 )
 
 const (

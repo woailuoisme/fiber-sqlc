@@ -5,9 +5,9 @@ import (
 	"io"
 	"time"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/user"
-	"cgin/pkg/excel"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/user"
+	"cfiber/pkg/excel"
 )
 
 const (

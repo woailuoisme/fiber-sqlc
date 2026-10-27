@@ -16,9 +16,9 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
-	"cgin/internal/bootstrap"
-	"cgin/internal/config"
-	"cgin/internal/console/core"
+	"cfiber/internal/bootstrap"
+	"cfiber/internal/config"
+	"cfiber/internal/console/core"
 )
 
 // RouteEntry 描述解析提取后的单条 HTTP 路由信息。
@@ -153,7 +153,7 @@ func formatHandlerName(raw string) string {
 		return "-"
 	}
 	s = strings.TrimSuffix(s, "-fm")
-	s = strings.TrimPrefix(s, "cgin/")
+	s = strings.TrimPrefix(s, "cfiber/")
 	s = strings.TrimPrefix(s, "internal/")
 	// 运行时符号形如 handler.(*SystemHandler).Liveness，统一收敛为 handler.SystemHandler.Liveness。
 	s = strings.ReplaceAll(s, ".(*", ".")

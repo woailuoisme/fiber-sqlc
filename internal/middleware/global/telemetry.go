@@ -15,13 +15,13 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
-	"cgin/pkg/telemetry"
+	"cfiber/pkg/telemetry"
 )
 
 const (
 	headerTraceID = "x-trace-id"
-	tracerScope   = "cgin/http"
-	meterScope    = "cgin/http"
+	tracerScope   = "cfiber/http"
+	meterScope    = "cfiber/http"
 )
 
 type httpMetrics struct {

@@ -14,16 +14,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/config"
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	"cgin/internal/middleware"
-	"cgin/internal/middleware/global"
-	"cgin/internal/user"
-	"cgin/pkg/authentication"
-	"cgin/pkg/authorization"
-	"cgin/pkg/cache"
-	"cgin/pkg/errs"
+	"cfiber/internal/config"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	"cfiber/internal/middleware"
+	"cfiber/internal/middleware/global"
+	"cfiber/internal/user"
+	"cfiber/pkg/authentication"
+	"cfiber/pkg/authorization"
+	"cfiber/pkg/cache"
+	"cfiber/pkg/errs"
 )
 
 type memAuthBlacklistStore struct {
@@ -105,7 +105,7 @@ func setupAuthEnv() (
 	store := newMemAuthBlacklistStore()
 	tokens := authentication.NewTokenIssuer(config.JWTConfig{
 		Secret:     "0123456789abcdef0123456789abcdef",
-		Issuer:     "cgin-test",
+		Issuer:     "cfiber-test",
 		AccessTTL:  15 * time.Minute,
 		RefreshTTL: 24 * time.Hour,
 	}, store)

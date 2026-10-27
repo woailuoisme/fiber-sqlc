@@ -16,9 +16,9 @@ import (
 
 const (
 	// namespace 统一键命名空间前缀。
-	namespace = "cgin"
+	namespace = "cfiber"
 	// negativeSentinel 是负缓存（Anti-Penetration）的内部占位哨兵。
-	negativeSentinel = "\x00__cgin_cache_nil__\x00"
+	negativeSentinel = "\x00__cfiber_cache_nil__\x00"
 )
 
 var (
@@ -62,7 +62,7 @@ type LockProvider interface {
 	Locker() Locker
 }
 
-// Key 拼接带应用命名空间的缓存键（例如 Key("jwt", "revoked", jti) -> cgin:jwt:revoked:<jti>）。
+// Key 拼接带应用命名空间的缓存键（例如 Key("jwt", "revoked", jti) -> cfiber:jwt:revoked:<jti>）。
 func Key(parts ...string) string {
 	if len(parts) == 0 {
 		return namespace

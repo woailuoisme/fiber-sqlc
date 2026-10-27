@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"cgin/internal/database/sqlc"
-	"cgin/internal/enum"
-	appuser "cgin/internal/user"
-	"cgin/pkg/errs"
-	"cgin/pkg/hasher"
+	"cfiber/internal/database/sqlc"
+	"cfiber/internal/enum"
+	appuser "cfiber/internal/user"
+	"cfiber/pkg/errs"
+	"cfiber/pkg/hasher"
 )
 
 // TestRegisterCreatesUserAndCredential 覆盖注册深模块的事务写入、归一化与默认值。

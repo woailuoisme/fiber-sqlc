@@ -5,13 +5,13 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
-	"cgin/internal/config"
-	"cgin/internal/handler"
-	adminhandler "cgin/internal/handler/admin"
-	"cgin/internal/middleware"
-	"cgin/internal/middleware/global"
-	"cgin/internal/service"
-	adminservice "cgin/internal/service/admin"
+	"cfiber/internal/config"
+	"cfiber/internal/handler"
+	adminhandler "cfiber/internal/handler/admin"
+	"cfiber/internal/middleware"
+	"cfiber/internal/middleware/global"
+	"cfiber/internal/service"
+	adminservice "cfiber/internal/service/admin"
 )
 
 // HandlersPackage 声明 HTTP 传输适配层（各模块 Handler、路由表与 Gin 路由引擎）。
