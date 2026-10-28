@@ -86,12 +86,6 @@ var SecurityPackage = do.Package(
 		val := do.MustInvoke[*validator.Validator](i)
 		storage := do.MustInvoke[fiber.Storage](i)
 
-		if cfg.Session.Generated {
-			log.Warn().
-				Str("session_name", cfg.Session.Name).
-				Msg("SESSION_SECRET is not configured, using an ephemeral key for this process; sessions are invalidated on restart")
-		}
-
 		return global.New(global.Deps{
 			Cache:          c,
 			Storage:        storage,
@@ -101,9 +95,6 @@ var SecurityPackage = do.Package(
 			Translator:     translator,
 			Validator:      val,
 			RequestTimeout: cfg.App.Server.RequestTimeout,
-			SessionName:    cfg.Session.Name,
-			SessionSecret:  cfg.Session.Secret,
-			SessionMaxAge:  cfg.Session.MaxAge,
 			UploadMaxBody:  cfg.Media.MaxFileSize,
 		}), nil
 	}),

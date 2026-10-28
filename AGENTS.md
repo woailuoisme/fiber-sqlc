@@ -10,7 +10,7 @@
 
 - **运行时与语言规范**：[Go 1.27+](file:///Users/seaside/Projects/backend/go/fiber-sqlc/go.mod) 现代标准，开启严格并发安全与类型安全。
 - **Web 引擎**：[Fiber v3](file:///Users/seaside/Projects/backend/go/fiber-sqlc/internal/bootstrap/engine.go) (`github.com/gofiber/fiber/v3`)，基于 fasthttp 的零分配极速 Web 核心，统一集中式错误处理、优雅停机与钩子生命周期。
-- **中间件生态**：传输层全面采用 Fiber v3 官方生态 —— `cors` / `session` / `casbin` (`fiber/contrib/casbin/v2`) / `cache` / `requestid` / `timeout` / `recover` / `limiter` / `idempotency`，统一基于 `fiber.Storage` (`valkey`) 存储状态；结合自建的多语言协商、错误信封与资源动作级鉴权，归属见 §3.1 对照表。
+- **中间件生态**：传输层全面采用 Fiber v3 官方生态 —— `favicon` / `otel` (`fiber/contrib/v3/otel`) / `cors` / `casbin` (`fiber/contrib/casbin/v2`) / `cache` / `requestid` / `timeout` / `recover` / `limiter` / `idempotency`，统一基于 `fiber.Storage` (`valkey`) 存储状态；结合自建的多语言协商、错误信封与资源动作级鉴权，归属见 §3.1 对照表。
 - **数据访问**：[sqlc 1.31.1](file:///Users/seaside/Projects/backend/go/fiber-sqlc/sqlc.yaml) 离线生成类型安全查询集（`pgx/v5`，输出 `internal/database/sqlc`）+ [pgxpool 原生连接池](file:///Users/seaside/Projects/backend/go/fiber-sqlc/internal/database/client.go)，底层运行 PostgreSQL 18。
 - **数据库迁移 (Migrations)**：[Atlas CLI](file:///Users/seaside/Projects/backend/go/fiber-sqlc/atlas.hcl)，采用声明式 Schema 驱动的版本化 SQL 迁移。
 - **缓存体系**：[Valkey (Redis 兼容)](file:///Users/seaside/Projects/backend/go/fiber-sqlc/pkg/cache/cache.go) + 高性能驱动 (`redis/rueidis`)。
@@ -153,7 +153,6 @@ test/                           # 外部测试包（测试代码与业务逻辑�
 | 链路追踪与指标 | 官方 `fiber/contrib/v3/otel` | `internal/middleware/global/telemetry.go` |
 | 容器健康与存活探针 | 官方 `fiber/v3/middleware/healthcheck` | `internal/route/system.go` |
 | 跨域预检 | 官方 `fiber/v3/middleware/cors` | `internal/middleware/global/cors.go` |
-| 会话 Cookie | 官方 `fiber/v3/middleware/session` + `fiber.Storage` | `internal/middleware/global/session.go` |
 | 路径级 Casbin 鉴权 | 官方 `fiber/contrib/casbin/v2` | `internal/middleware/auth.go` `Authz()` |
 | 文档响应缓存 | 官方 `fiber/v3/middleware/cache` | `internal/bootstrap/docs.go` |
 | 请求标识 | 官方 `fiber/v3/middleware/requestid` | `internal/middleware/global/observability.go` `RequestID()` |
@@ -167,8 +166,6 @@ test/                           # 外部测试包（测试代码与业务逻辑�
 | **请求体配额 / JSON 类型强校验** | 官方 `fiber.Config.BodyLimit` + 自建 Content-Type 守卫 | `internal/middleware/global/security.go` |
 | **多语言协商** | 自建基于 `go-i18n` 之 Header/Cookie/Query 语言判定 | `internal/middleware/global/i18n.go` |
 | **资源+动作级鉴权** | 自建上下文断言守卫 | `internal/middleware/auth.go` `Can()` |
-
-> 会话密钥由 `SESSION_SECRET` 提供：生产环境必填（≥32 字符）缺失即启动失败；非生产缺失时生成一次性随机密钥并打 Warn，详见 `.env.example`。
 
 ### 🚨 架构分层绝对红线
 

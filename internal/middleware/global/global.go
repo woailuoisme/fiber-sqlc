@@ -1,7 +1,7 @@
 // Package global 提供全局 HTTP 传输层中间件，挂载顺序见 internal/bootstrap/engine.go。
 //
 // 官方 Fiber 生态能力覆盖：
-// CORS / Session / Timeout / RequestID / AccessLog / Recover / Idempotency。
+// Favicon / Telemetry / CORS / Timeout / RequestID / AccessLog / Recover / Idempotency。
 package global
 
 import (
@@ -32,12 +32,6 @@ type Deps struct {
 	MaxBody int64
 	// UploadMaxBody multipart/form-data 上传请求的请求体上限（字节，0 表示用默认值）。
 	UploadMaxBody int64
-	// SessionName 是会话 Cookie 名称；为空时回退 DefaultSessionName。
-	SessionName string
-	// SessionSecret 是会话签名密钥；为空时生成一次性随机密钥并告警。
-	SessionSecret string
-	// SessionMaxAge 是会话有效期；为 0 时回退 7 天。
-	SessionMaxAge time.Duration
 }
 
 // Middleware 承载全局传输层中间件的实例依赖。
@@ -52,9 +46,6 @@ type Middleware struct {
 	requestTimeout time.Duration
 	maxBody        int64
 	uploadMaxBody  int64
-	sessionName    string
-	sessionSecret  string
-	sessionMaxAge  time.Duration
 }
 
 // New 构造全局中间件实例。
@@ -72,9 +63,6 @@ func New(deps Deps) *Middleware {
 		requestTimeout: deps.RequestTimeout,
 		maxBody:        deps.MaxBody,
 		uploadMaxBody:  deps.UploadMaxBody,
-		sessionName:    deps.SessionName,
-		sessionSecret:  deps.SessionSecret,
-		sessionMaxAge:  deps.SessionMaxAge,
 	}
 }
 
