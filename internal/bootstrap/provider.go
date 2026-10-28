@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"context"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
@@ -42,7 +42,7 @@ func NewApplication(ctx context.Context, portOverride int) (*Application, error)
 	}
 
 	// 触发全量拓扑解析（Fail-Fast）
-	engine, err := do.Invoke[*gin.Engine](injector)
+	engine, err := do.Invoke[*fiber.App](injector)
 	if err != nil {
 		_ = injector.ShutdownWithContext(ctx)
 		return nil, err

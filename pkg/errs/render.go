@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/samber/oops"
@@ -58,40 +58,29 @@ func SanitizeMessage(msg string) string {
 	return msg
 }
 
-// errorCodeContextKey 是 gin 上下文里承载已渲染错误码的键。
-//
-// 键名只在本包出现，读写一律走下面两个 Helper：AGENTS §3.6 禁止跨包裸字符串 Context 键，
-// 且这一对读写分散在 errs 与 middleware 两个包，裸字符串极易改一边漏一边。
-const errorCodeContextKey = "error_code"
+// ErrorCodeContextKey 是 Fiber context 里承载已渲染错误码的键。
+const ErrorCodeContextKey = "error_code"
 
-// SetErrorCodeContext 把最终错误码写入 gin 上下文，供访问日志与监控采集。
-func SetErrorCodeContext(c *gin.Context, code string) {
+// SetErrorCodeContext 把最终错误码写入 Fiber 上下文，供访问日志与监控采集。
+func SetErrorCodeContext(c fiber.Ctx, code string) {
 	if c == nil || code == "" {
 		return
 	}
-	c.Set(errorCodeContextKey, code)
+	fiber.Locals(c, ErrorCodeContextKey, code)
 }
 
-// ErrorCodeFromContext 读取 gin 上下文中的错误码，缺失或类型不符时返回空串。
-func ErrorCodeFromContext(c *gin.Context) string {
+// ErrorCodeFromContext 读取 Fiber 上下文中的错误码，缺失或类型不符时返回空串。
+func ErrorCodeFromContext(c fiber.Ctx) string {
 	if c == nil {
 		return ""
 	}
-	code, ok := c.Get(errorCodeContextKey)
-	if !ok {
-		return ""
-	}
-	str, _ := code.(string)
-	return str
+	return fiber.Locals[string](c, ErrorCodeContextKey)
 }
 
 // Render 映射统一错误响应并写回客户端。
-//
-// 本函数只负责“映射 + 写回 + 5xx 日志”：字段级翻译由中间件在调用前完成，
-// 这里不再持有 i18n，避免同一条翻译规则在两处各写一遍。
-func Render(c *gin.Context, err error) {
+func Render(c fiber.Ctx, err error) error {
 	if err == nil {
-		return
+		return nil
 	}
 
 	status, resp := Map(err)
@@ -100,13 +89,10 @@ func Render(c *gin.Context, err error) {
 	resp.Message = SanitizeMessage(resp.Message)
 
 	SetErrorCodeContext(c, resp.Code)
-	if len(c.Errors) == 0 {
-		_ = c.Error(err)
-	}
 
-	if status >= http.StatusInternalServerError {
+	if status >= fiber.StatusInternalServerError {
 		// 5xx 记录底层根因与调用堆栈，避免对外统一文案遮蔽排错细节。
-		log := logger.FromContext(c.Request.Context())
+		log := logger.FromContext(c.Context())
 		event := log.Error().
 			Str("stack", Stack(err)).
 			Err(RootCause(err)).
@@ -120,7 +106,7 @@ func Render(c *gin.Context, err error) {
 		event.Msg("request processing failed")
 	}
 
-	c.AbortWithStatusJSON(status, resp)
+	return c.Status(status).JSON(resp)
 }
 
 // 敏感键名：密码、凭证、令牌与密钥。
@@ -243,6 +229,16 @@ func Map(err error) (int, Response) {
 		}
 	}
 
+	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok {
+		status := fiberErr.Code
+		code := CodeForStatus(status)
+		msg := fiberErr.Message
+		if msg == "" || status >= fiber.StatusInternalServerError {
+			msg = MessageForStatus(status)
+		}
+		return status, Response{Code: string(code), Message: msg}
+	}
+
 	// 兜底：未识别错误统一返回 500。
 	return http.StatusInternalServerError, Response{Code: string(CodeInternal), Message: msgInternal}
 }
@@ -266,10 +262,14 @@ func mapMalformedBody(err error) (int, Response, bool) {
 }
 
 func isBadRequestError(err error) bool {
+	if fiberErr, ok := errors.AsType[*fiber.Error](err); ok && fiberErr.Code == fiber.StatusBadRequest {
+		return true
+	}
 	_, isNum := errors.AsType[*strconv.NumError](err)
 	_, isSyntax := errors.AsType[*json.SyntaxError](err)
 	_, isType := errors.AsType[*json.UnmarshalTypeError](err)
-	return isNum || isSyntax || isType || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)
+	msg := strings.ToLower(err.Error())
+	return isNum || isSyntax || isType || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(msg, "empty") || strings.Contains(msg, "syntax") || strings.Contains(msg, "idempotency")
 }
 
 // mapPgError 将数据库约束错误映射为业务状态码与文案。

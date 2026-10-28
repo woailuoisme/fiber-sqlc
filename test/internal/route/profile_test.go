@@ -6,13 +6,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -20,6 +21,7 @@ import (
 	"cfiber/internal/enum"
 	"cfiber/internal/handler"
 	"cfiber/internal/media"
+	"cfiber/internal/middleware/global"
 	"cfiber/internal/service"
 	"cfiber/internal/user"
 	"cfiber/pkg/authentication"
@@ -27,15 +29,29 @@ import (
 	"cfiber/pkg/validator"
 )
 
-// TestMain 安装校验器：本包通过 gin 绑定驱动多部分表单与 JSON。
+var testValidator *validator.Validator
+
+// TestMain 安装校验器：本包通过 fiber 绑定驱动多部分表单与 JSON。
 func TestMain(m *testing.M) {
-	v, err := validator.New()
+	var err error
+	testValidator, err = validator.New()
 	if err != nil {
 		panic(err)
 	}
-	v.Install()
+	testValidator.Install()
 
 	os.Exit(m.Run())
+}
+
+// executeRequest 驱动一次 HTTP 测试并返回状态码和响应体。
+func executeRequest(t *testing.T, app *fiber.App, req *http.Request) (int, string) {
+	t.Helper()
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	return resp.StatusCode, string(body)
 }
 
 // TestUpdateProfileRequestShape 校验自助更新只暴露 Q27 允许的字段。
@@ -66,104 +82,93 @@ func TestUpdateProfileRequestShape(t *testing.T) {
 
 // TestUploadAvatarValidation 校验上传头像的权限要求、字段提取与魔数格式防御。
 func TestUploadAvatarValidation(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	avatars := &fakeAvatars{}
 	users := &fakeUsers{profile: user.Profile{}}
 	handler := handler.NewProfileHandler(service.MustNewProfileService(service.ProfileDeps{Users: users, Avatars: avatars}))
 
-	newTestEngine := func(withAuth bool) *gin.Engine {
-		engine := gin.New()
-		engine.Use(func(c *gin.Context) {
+	newTestEngine := func(withAuth bool) *fiber.App {
+		app := fiber.New(fiber.Config{
+			StructValidator: testValidator,
+			ErrorHandler:    global.HandleError,
+		})
+		app.Use(func(c fiber.Ctx) error {
 			if withAuth {
-				c.Request = c.Request.WithContext(authentication.With(c.Request.Context(), authentication.Identity{
+				c.SetContext(authentication.With(c.Context(), authentication.Identity{
 					UserID: "user_test_avatar_1",
 					Role:   string(enum.RoleUser),
 				}))
 			}
-			c.Next()
-			if len(c.Errors) > 0 {
-				errs.Render(c, c.Errors.Last().Err)
-			}
+			return c.Next()
 		})
-		engine.POST("/v1/users/me/avatar", handler.UploadAvatar)
-		return engine
+		app.Post("/v1/users/me/avatar", handler.UploadAvatar)
+		return app
 	}
 
 	t.Run("未登录拒绝 401", func(t *testing.T) {
-		engine := newTestEngine(false)
+		app := newTestEngine(false)
 		req := createMultipartRequest(t, "avatar", "avatar.png", []byte("dummy"))
-		rec := httptest.NewRecorder()
-		engine.ServeHTTP(rec, req)
+		code, _ := executeRequest(t, app, req)
 
-		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		assert.Equal(t, http.StatusUnauthorized, code)
 	})
 
 	t.Run("缺失文件返回 422", func(t *testing.T) {
-		engine := newTestEngine(true)
+		app := newTestEngine(true)
 		req := createMultipartRequest(t, "", "", nil)
-		rec := httptest.NewRecorder()
-		engine.ServeHTTP(rec, req)
+		code, body := executeRequest(t, app, req)
 
-		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
-		assert.Contains(t, rec.Body.String(), "avatar")
+		assert.Equal(t, http.StatusUnprocessableEntity, code)
+		assert.Contains(t, body, "avatar")
 	})
 
 	t.Run("非法扩展名返回 422", func(t *testing.T) {
-		engine := newTestEngine(true)
+		app := newTestEngine(true)
 		req := createMultipartRequest(t, "avatar", "script.sh", []byte("#!/bin/sh\necho hack"))
-		rec := httptest.NewRecorder()
-		engine.ServeHTTP(rec, req)
+		code, body := executeRequest(t, app, req)
 
-		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
-		assert.Contains(t, rec.Body.String(), "avatar")
+		assert.Equal(t, http.StatusUnprocessableEntity, code)
+		assert.Contains(t, body, "avatar")
 	})
 
 	t.Run("超限尺寸 (大于 2MB) 返回 422", func(t *testing.T) {
-		engine := newTestEngine(true)
+		app := newTestEngine(true)
 		oversized := make([]byte, 2*1024*1024+16)
 		req := createMultipartRequest(t, "avatar", "huge.png", oversized)
-		rec := httptest.NewRecorder()
-		engine.ServeHTTP(rec, req)
+		code, body := executeRequest(t, app, req)
 
-		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
-		assert.Contains(t, rec.Body.String(), "avatar")
+		assert.Equal(t, http.StatusUnprocessableEntity, code)
+		assert.Contains(t, body, "avatar")
 	})
 
 	t.Run("伪装图片 (文本伪装成 png) 魔数检测拦截 422", func(t *testing.T) {
-		engine := newTestEngine(true)
+		app := newTestEngine(true)
 		fakePNG := []byte("This is plain text pretending to be a png file")
 		req := createMultipartRequest(t, "avatar", "fake.png", fakePNG)
-		rec := httptest.NewRecorder()
-		engine.ServeHTTP(rec, req)
+		code, body := executeRequest(t, app, req)
 
-		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
-		assert.Contains(t, rec.Body.String(), "avatar")
+		assert.Equal(t, http.StatusUnprocessableEntity, code)
+		assert.Contains(t, body, "avatar")
 	})
 
 	t.Run("仅接受 avatar 字段，不匹配 file 字段返回 422", func(t *testing.T) {
-		engine := newTestEngine(true)
+		app := newTestEngine(true)
 		req := createMultipartRequest(t, "file", "fake.png", []byte("content"))
-		rec := httptest.NewRecorder()
-		engine.ServeHTTP(rec, req)
+		code, body := executeRequest(t, app, req)
 
-		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
-		assert.Contains(t, rec.Body.String(), "avatar")
+		assert.Equal(t, http.StatusUnprocessableEntity, code)
+		assert.Contains(t, body, "avatar")
 	})
 }
 
 // TestUploadAvatarWritesImageInsideTransaction 校验合法头像会把签名 URL 写入 user.image，且作用域为客户端自助。
 func TestUploadAvatarWritesImageInsideTransaction(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	avatars := &fakeAvatars{}
 	users := &fakeUsers{}
-	engine := newAvatarEngine(t, avatars, users)
+	app := newAvatarEngine(t, avatars, users)
 
-	rec := httptest.NewRecorder()
-	engine.ServeHTTP(rec, createMultipartRequest(t, "avatar", "avatar.png", pngHeader))
+	code, body := executeRequest(t, app, createMultipartRequest(t, "avatar", "avatar.png", pngHeader))
 
-	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	require.Equal(t, http.StatusOK, code, body)
 	assert.Equal(t, 1, avatars.calls)
 	assert.True(t, users.updated)
 	assert.Equal(t, user.ScopeClient, users.gotScope)
@@ -175,38 +180,35 @@ func TestUploadAvatarWritesImageInsideTransaction(t *testing.T) {
 
 // TestUploadAvatarAbortsWhenHostWriteFails 校验宿主回写失败时整笔头像替换失败，不返回成功档案。
 func TestUploadAvatarAbortsWhenHostWriteFails(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	avatars := &fakeAvatars{}
 	users := &fakeUsers{err: errs.Internal(errors.New("write user image failed"))}
-	engine := newAvatarEngine(t, avatars, users)
+	app := newAvatarEngine(t, avatars, users)
 
-	rec := httptest.NewRecorder()
-	engine.ServeHTTP(rec, createMultipartRequest(t, "avatar", "avatar.png", pngHeader))
+	code, body := executeRequest(t, app, createMultipartRequest(t, "avatar", "avatar.png", pngHeader))
 
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Equal(t, http.StatusInternalServerError, code)
 	require.Error(t, avatars.linkErr, "宿主回写失败必须透传给媒体事务以触发回滚")
-	assert.NotContains(t, rec.Body.String(), "write user image failed")
+	assert.NotContains(t, body, "write user image failed")
 }
 
 // newAvatarEngine 构造带认证注入与统一错误渲染的头像上传引擎。
-func newAvatarEngine(t *testing.T, avatars *fakeAvatars, users *fakeUsers) *gin.Engine {
+func newAvatarEngine(t *testing.T, avatars *fakeAvatars, users *fakeUsers) *fiber.App {
 	t.Helper()
 
 	handler := handler.NewProfileHandler(service.MustNewProfileService(service.ProfileDeps{Users: users, Avatars: avatars}))
-	engine := gin.New()
-	engine.Use(func(c *gin.Context) {
-		c.Request = c.Request.WithContext(authentication.With(c.Request.Context(), authentication.Identity{
+	app := fiber.New(fiber.Config{
+		StructValidator: testValidator,
+		ErrorHandler:    global.HandleError,
+	})
+	app.Use(func(c fiber.Ctx) error {
+		c.SetContext(authentication.With(c.Context(), authentication.Identity{
 			UserID: "user_test_avatar_1",
 			Role:   string(enum.RoleUser),
 		}))
-		c.Next()
-		if len(c.Errors) > 0 {
-			errs.Render(c, c.Errors.Last().Err)
-		}
+		return c.Next()
 	})
-	engine.POST("/v1/users/me/avatar", handler.UploadAvatar)
-	return engine
+	app.Post("/v1/users/me/avatar", handler.UploadAvatar)
+	return app
 }
 
 // fakeAvatarURL 是 fake 媒体存储返回的固定签名地址。

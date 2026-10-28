@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -21,31 +21,28 @@ import (
 )
 
 func TestTelemetryMiddleware_Disabled(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	mw := global.New(global.Deps{})
-	engine := gin.New()
-	engine.Use(
+	app := fiber.New()
+	app.Use(
 		mw.Telemetry(),
 		mw.RequestID(),
 	)
 
-	engine.GET("/ping", func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
+	app.Get("/ping", func(c fiber.Ctx) error {
+		return c.SendString("pong")
 	})
 
-	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
-	engine.ServeHTTP(rec, req)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Empty(t, rec.Header().Get("x-trace-id"))
-	assert.NotEmpty(t, rec.Header().Get("x-request-id"))
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Empty(t, resp.Header.Get("X-Trace-ID"))
+	assert.NotEmpty(t, resp.Header.Get("X-Request-ID"))
 }
 
 func TestTelemetryMiddleware_TraceLogCorrelation(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	// 1. 设置内存 TracerProvider 模拟已激活的 OpenTelemetry
 	spanRecorder := tracetest.NewSpanRecorder()
 	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder))
@@ -60,32 +57,32 @@ func TestTelemetryMiddleware_TraceLogCorrelation(t *testing.T) {
 	)
 
 	mw := global.New(global.Deps{Logger: testLogger})
-	engine := gin.New()
+	app := fiber.New()
 
-	engine.Use(
-		func(c *gin.Context) {
+	app.Use(
+		func(c fiber.Ctx) error {
 			// 模拟通过 Tracer 创建 Server Span 并下发上下文
 			tr := tp.Tracer("test/http")
-			ctx, span := tr.Start(c.Request.Context(), "GET /test-trace")
+			ctx, span := tr.Start(c.Context(), "GET /test-trace")
 			defer span.End()
-			c.Request = c.Request.WithContext(ctx)
-			c.Next()
+			c.SetContext(ctx)
+			return c.Next()
 		},
 		mw.RequestID(),
 	)
 
-	var recordedTraceID, recordedSpanID, recordedReqID string
-	engine.GET("/test-trace", func(c *gin.Context) {
-		log := logger.FromContext(c.Request.Context())
+	app.Get("/test-trace", func(c fiber.Ctx) error {
+		log := logger.FromContext(c.Context())
 		log.Info().Msg("executing test handler")
-		c.String(http.StatusOK, "ok")
+		return c.SendString("ok")
 	})
 
-	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/test-trace", nil)
-	engine.ServeHTTP(rec, req)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// 验证从活跃 Span 导出的 trace_id 是否已自动对齐为 X-Request-ID
 	spans := spanRecorder.Ended()
@@ -94,19 +91,19 @@ func TestTelemetryMiddleware_TraceLogCorrelation(t *testing.T) {
 	expectedTraceID := activeSpan.SpanContext().TraceID().String()
 	expectedSpanID := activeSpan.SpanContext().SpanID().String()
 
-	assert.Equal(t, expectedTraceID, rec.Header().Get("x-request-id"), "未提供 X-Request-ID 时应自动对齐为 TraceID")
+	assert.Equal(t, expectedTraceID, resp.Header.Get("X-Request-ID"), "未提供 X-Request-ID 时应自动对齐为 TraceID")
 
 	// 验证 JSON 日志是否已自动注入 trace_id 与 span_id
 	line := strings.TrimSpace(buf.String())
 	require.NotEmpty(t, line)
 
 	var logData map[string]any
-	err := json.Unmarshal([]byte(line), &logData)
+	err = json.Unmarshal([]byte(line), &logData)
 	require.NoError(t, err)
 
-	recordedTraceID, _ = logData["trace_id"].(string)
-	recordedSpanID, _ = logData["span_id"].(string)
-	recordedReqID, _ = logData["request_id"].(string)
+	recordedTraceID, _ := logData["trace_id"].(string)
+	recordedSpanID, _ := logData["span_id"].(string)
+	recordedReqID, _ := logData["request_id"].(string)
 
 	assert.Equal(t, expectedTraceID, recordedTraceID, "结构化日志应包含匹配的 trace_id")
 	assert.Equal(t, expectedSpanID, recordedSpanID, "结构化日志应包含匹配的 span_id")

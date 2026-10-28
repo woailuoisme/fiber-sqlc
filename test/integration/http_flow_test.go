@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -562,7 +562,7 @@ func TestEmailVerificationOTPFlow(t *testing.T) {
 }
 
 // signInAdmin 用 .env 里的种子管理员登录。
-func signInAdmin(t *testing.T, engine *gin.Engine) string {
+func signInAdmin(t *testing.T, engine *fiber.App) string {
 	t.Helper()
 
 	email := envOr("SEED_ADMIN_EMAIL", "admin@cfiber.local")

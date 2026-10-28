@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
@@ -83,6 +84,7 @@ var SecurityPackage = do.Package(
 		log := do.MustInvoke[*zerolog.Logger](i)
 		translator := do.MustInvoke[i18n.Translator](i)
 		val := do.MustInvoke[*validator.Validator](i)
+		storage := do.MustInvoke[fiber.Storage](i)
 
 		if cfg.Session.Generated {
 			log.Warn().
@@ -92,6 +94,7 @@ var SecurityPackage = do.Package(
 
 		return global.New(global.Deps{
 			Cache:          c,
+			Storage:        storage,
 			Logger:         log,
 			CORS:           cfg.CORS,
 			Production:     cfg.IsProduction(),
@@ -110,12 +113,14 @@ var SecurityPackage = do.Package(
 		cfg := do.MustInvoke[*config.Config](i)
 		authManager := do.MustInvoke[*platformauth.Manager](i)
 		c := do.MustInvoke[cache.Store](i)
+		storage := do.MustInvoke[fiber.Storage](i)
 		enforcer := do.MustInvoke[*authorization.Enforcer](i)
 		log := do.MustInvoke[*zerolog.Logger](i)
 
 		return middleware.New(middleware.Deps{
 			AuthManager: authManager,
 			Cache:       c,
+			Storage:     storage,
 			Authz:       enforcer,
 			Logger:      log,
 			Limiter:     cfg.Limiter,

@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 
 	"cfiber/internal/dto"
 	"cfiber/internal/service"
@@ -29,20 +29,18 @@ func NewProfileHandler(svc *service.ProfileService) *ProfileHandler {
 // @Success      200 {object} dto.ProfileResource "本人档案"
 // @x-order      1
 // @Router       /users/me [get]
-func (h *ProfileHandler) GetProfile(c *gin.Context) {
-	identity, err := authentication.RequireIdentity(c.Request.Context())
+func (h *ProfileHandler) GetProfile(c fiber.Ctx) error {
+	identity, err := authentication.RequireIdentity(c.Context())
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 	userID := identity.UserID
 
-	profile, err := h.svc.Get(c.Request.Context(), userID)
+	profile, err := h.svc.Get(c.Context(), userID)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, profile)
+	return response.OK(c, profile)
 }
 
 // UpdateProfile 处理 PATCH /v1/users/me。
@@ -57,26 +55,23 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 // @Success      200 {object} dto.ProfileResource "更新后的档案"
 // @x-order      2
 // @Router       /users/me [patch]
-func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
-	identity, err := authentication.RequireIdentity(c.Request.Context())
+func (h *ProfileHandler) UpdateProfile(c fiber.Ctx) error {
+	identity, err := authentication.RequireIdentity(c.Context())
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 	userID := identity.UserID
 
 	var body dto.UpdateProfileBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	profile, err := h.svc.Update(c.Request.Context(), userID, body.FieldSet())
+	profile, err := h.svc.Update(c.Context(), userID, body.FieldSet())
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, profile)
+	return response.OK(c, profile)
 }
 
 // UploadAvatar 处理 POST /v1/users/me/avatar。
@@ -93,25 +88,28 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 // @Failure      422 {object} errs.Response "文件校验失败"
 // @x-order      3
 // @Router       /users/me/avatar [post]
-func (h *ProfileHandler) UploadAvatar(c *gin.Context) {
-	identity, err := authentication.RequireIdentity(c.Request.Context())
+func (h *ProfileHandler) UploadAvatar(c fiber.Ctx) error {
+	identity, err := authentication.RequireIdentity(c.Context())
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 	userID := identity.UserID
 
 	var body dto.UploadAvatarBody
-	if err := c.ShouldBind(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().Form(&body); err != nil {
+		return err
+	}
+	if body.Avatar == nil {
+		file, err := c.FormFile("avatar")
+		if err == nil {
+			body.Avatar = file
+		}
 	}
 
-	profile, err := h.svc.UploadAvatar(c.Request.Context(), userID, body.Avatar)
+	profile, err := h.svc.UploadAvatar(c.Context(), userID, body.Avatar)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 
-	response.OK(c, profile)
+	return response.OK(c, profile)
 }

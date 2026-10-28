@@ -2,9 +2,8 @@ package handler
 
 import (
 	"cmp"
-	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 
 	"cfiber/internal/service"
 	"cfiber/pkg/authentication"
@@ -35,19 +34,17 @@ func NewRealtimeHandler(svc *service.RealtimeService) *RealtimeHandler {
 // @Success      200 {object} dto.TokenResource "实时通信连接凭据"
 // @x-order      1
 // @Router       /realtime/token [get]
-func (h *RealtimeHandler) GetToken(c *gin.Context) {
-	identity, err := authentication.RequireIdentity(c.Request.Context())
+func (h *RealtimeHandler) GetToken(c fiber.Ctx) error {
+	identity, err := authentication.RequireIdentity(c.Context())
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 
-	res, err := h.svc.IssueToken(c.Request.Context(), identity.UserID, identity.Role)
+	res, err := h.svc.IssueToken(c.Context(), identity.UserID, identity.Role)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, res)
+	return response.OK(c, res)
 }
 
 // ProxySubscribe 处理 POST /v1/realtime/proxy/subscribe。
@@ -61,28 +58,24 @@ func (h *RealtimeHandler) GetToken(c *gin.Context) {
 // @Success      200 {object} dto.SubscribeResource "Centrifugo 订阅代理响应"
 // @x-order      2
 // @Router       /realtime/proxy/subscribe [post]
-func (h *RealtimeHandler) ProxySubscribe(c *gin.Context) {
-	body, err := c.GetRawData()
-	if err != nil {
-		// 读取请求体失败属本地错误，与 Centrifugo Proxy 协议无关，统一走应用错误模型渲染。
-		_ = c.Error(errs.BadRequest(""))
-		return
-	}
+func (h *RealtimeHandler) ProxySubscribe(c fiber.Ctx) error {
+	body := c.Body()
 
 	// 签名头优先读取 X-Centrifugo-Signature 或 X-Signature
 	sig := cmp.Or(
-		c.GetHeader(platformRealtime.CentrifugoSignatureHeader),
-		c.GetHeader(platformRealtime.CentrifugoSignatureLegacyHeader),
+		c.Get(platformRealtime.CentrifugoSignatureHeader),
+		c.Get(platformRealtime.CentrifugoSignatureLegacyHeader),
 	)
 
-	resp, err := h.svc.AuthorizeSubscribe(c.Request.Context(), body, sig)
+	resp, err := h.svc.AuthorizeSubscribe(c.Context(), body, sig)
 	if err != nil {
 		// 本端点的错误体遵循 Centrifugo Proxy 协议（error.code 为状态码），
 		// 因此这里不用 errs.Render 的应用统一错误模型，只用它定状态码与文案。
 		status, mapped := errs.Map(err)
-		c.JSON(status, gin.H{"error": gin.H{"code": status, "message": mapped.Message}})
-		return
+		return c.Status(status).JSON(fiber.Map{
+			"error": fiber.Map{"code": status, "message": mapped.Message},
+		})
 	}
 
-	c.JSON(http.StatusOK, resp)
+	return c.Status(fiber.StatusOK).JSON(resp)
 }

@@ -2,10 +2,8 @@ package bootstrap
 
 import (
 	"errors"
-	"fmt"
-	"io"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 
 	"cfiber/internal/config"
 	"cfiber/internal/handler"
@@ -14,7 +12,7 @@ import (
 	"cfiber/internal/middleware/global"
 	"cfiber/internal/route"
 	adminroute "cfiber/internal/route/admin"
-	"cfiber/pkg/errs"
+	"cfiber/pkg/validator"
 )
 
 // routeHandlers 汇总各模块的 HTTP 处理器，由装配方填充。
@@ -28,8 +26,8 @@ type routeHandlers struct {
 	payment   *handler.PaymentHandler
 }
 
-// mount 把全部模块挂载到 /v1 分组下；各 RegisterRoutes 的签名差异统一在这里抹平。
-func (h routeHandlers) mount(v1 *gin.RouterGroup, mw *middleware.Middleware) {
+// mount 把全部模块挂载到 /v1 分组下。
+func (h routeHandlers) mount(v1 fiber.Router, mw *middleware.Middleware) {
 	route.RegisterAuthRoutes(v1, h.auth, mw)
 	route.RegisterProfileRoutes(v1, h.profile, mw)
 	adminroute.RegisterAdminAuthRoutes(v1, h.adminAuth, mw)
@@ -39,7 +37,6 @@ func (h routeHandlers) mount(v1 *gin.RouterGroup, mw *middleware.Middleware) {
 }
 
 // zeroHandlers 提供仅用于撑起路由表的零值处理器。
-// 探测只登记端点不执行处理器，但指针须非 nil 且类型正确，因为 RegisterRoutes 会保存它们。
 func zeroHandlers() routeHandlers {
 	return routeHandlers{
 		system:    &handler.SystemHandler{},
@@ -52,28 +49,38 @@ func zeroHandlers() routeHandlers {
 	}
 }
 
-// buildEngine 组装 gin 引擎与全部路由。
+// buildEngine 组装 fiber 引擎与全部路由。
 func buildEngine(
 	cfg *config.Config,
 	globalMW *global.Middleware,
 	routeMW *middleware.Middleware,
 	handlers routeHandlers,
-) (*gin.Engine, error) {
-	// 设置 Gin 运行模式并静默默认控制台输出，由结构化日志中间件统一记录
-	gin.SetMode(cfg.ResolveGinMode())
-	gin.DefaultWriter = io.Discard
-	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, numHandlers int) {}
+	val *validator.Validator,
+) (*fiber.App, error) {
+	app := fiber.New(fiber.Config{
+		AppName:         cfg.App.Name,
+		ServerHeader:    "cfiber",
+		ErrorHandler:    globalMW.HandleError,
+		StructValidator: val,
+		BodyLimit:       32 * 1024 * 1024,
+		ReadTimeout:     cfg.App.Server.ReadTimeout,
+		WriteTimeout:    cfg.App.Server.WriteTimeout,
+		IdleTimeout:     cfg.App.Server.IdleTimeout,
+		// 维持默认极速零内存分配模式（Immutable: false）。
+		// 跨协程或逃逸请求生命周期的 Header/参数必须通过 utils.CopyString 复制独立副本。
+		Immutable:  false,
+		TrustProxy: true,
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Loopback: true,
+			Private:  true,
+		},
+	})
 
-	engine := gin.New()
-	engine.HandleMethodNotAllowed = true
+	// 全局中间件链按洋葱模型分层，顺序即依赖：
+	app.Use(
+		// 静态资源与浏览器降噪
+		globalMW.Favicon(),
 
-	// 不信任代理头，客户端真实 IP 直接取 RemoteAddr，防止 IP 伪造
-	if err := engine.SetTrustedProxies(nil); err != nil {
-		return nil, fmt.Errorf("set trusted proxies failed: %w", err)
-	}
-
-	// 全局中间件链按洋葱模型分层，顺序即依赖：观测要在最外层包裹，信封与恢复要能兜住后续链路。
-	engine.Use(
 		// 链路观测
 		globalMW.Telemetry(),
 		globalMW.RequestID(),
@@ -84,8 +91,7 @@ func buildEngine(
 		globalMW.Session(),
 		globalMW.I18n(),
 
-		// 异常治理
-		globalMW.ErrorHandler(),
+		// 异常治理与超时
 		globalMW.Recovery(),
 		globalMW.Timeout(),
 
@@ -95,45 +101,38 @@ func buildEngine(
 		globalMW.Idempotency(),
 	)
 
-	// 统一 404 与 405 错误响应，交由统一错误处理中间件渲染
-	abortWithError := func(err error) gin.HandlerFunc {
-		return func(c *gin.Context) {
-			_ = c.Error(err)
-			c.Abort()
-		}
-	}
-	engine.NoRoute(abortWithError(errs.NotFound("")))
-	engine.NoMethod(abortWithError(errs.MethodNotAllowed("")))
-
 	// 注册根路径与系统探针路由（/、/livez、/readyz）
-	route.RegisterSystemRoutes(engine, handlers.system)
+	route.RegisterSystemRoutes(app, handlers.system)
 
 	// 仅在开启 ENABLE_DOCS 时注册 API 文档路由
 	if cfg.App.EnableDocs {
-		registerDocs(engine)
+		registerDocs(app)
 	}
 
-	v1 := engine.Group("/v1")
+	v1 := app.Group("/v1")
 	handlers.mount(v1, routeMW)
 
-	return engine, nil
+	return app, nil
 }
 
-// InspectEngine 组装用于路由探测与文档自省的轻量级 Gin 引擎实例（零数据库与缓存网络连接）。
-func InspectEngine(cfg *config.Config) (*gin.Engine, error) {
+// InspectEngine 组装用于路由探测与文档自省的轻量级 Fiber 引擎实例（零数据库与缓存网络连接）。
+func InspectEngine(cfg *config.Config) (*fiber.App, error) {
 	if cfg == nil {
 		return nil, errors.New("bootstrap: inspect engine requires a non-nil config")
 	}
+
+	val, _ := validator.New()
 
 	globalMW := global.New(global.Deps{
 		CORS:           cfg.CORS,
 		Production:     cfg.IsProduction(),
 		RequestTimeout: cfg.App.Server.RequestTimeout,
+		Validator:      val,
 	})
 
 	routeMW := middleware.New(middleware.Deps{
 		Limiter: cfg.Limiter,
 	})
 
-	return buildEngine(cfg, globalMW, routeMW, zeroHandlers())
+	return buildEngine(cfg, globalMW, routeMW, zeroHandlers(), val)
 }

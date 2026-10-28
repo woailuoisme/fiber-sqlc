@@ -20,9 +20,8 @@ import (
 
 	"github.com/aarondl/opt/omitnull"
 	"github.com/dustin/go-humanize"
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	govalidator "github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v3"
 
 	"cfiber/pkg/errs"
 	"cfiber/pkg/i18n"
@@ -86,22 +85,21 @@ func New(opts ...Option) (*Validator, error) {
 	return v, nil
 }
 
-// Install 把本实例挂载为 gin 的包级 StructValidator。
-//
-// gin 在 binding.Bind 内部调用它，这是框架提供的唯一校验入口；
-// 挂载必须在服务开始接收请求之前完成，之后只读。
-func (v *Validator) Install() {
-	binding.Validator = &ginAdapter{validator: v}
+// Validate 实现 github.com/gofiber/fiber/v3.StructValidator 契约，自动由 c.Bind() 调用。
+func (v *Validator) Validate(out any) error {
+	return v.ValidateStruct(out)
 }
 
-// ginAdapter 把 Validator 适配为 gin 的 binding.StructValidator。
-type ginAdapter struct {
-	validator *Validator
+// Install 是向后兼容占位，Fiber v3 直接将 Validator 注入 fiber.Config.StructValidator。
+func (v *Validator) Install() {}
+
+// Engine 返回底层 *govalidator.Validate 实例。
+func (v *Validator) Engine() *govalidator.Validate {
+	if v == nil {
+		return nil
+	}
+	return v.engine
 }
-
-func (a *ginAdapter) ValidateStruct(obj any) error { return a.validator.ValidateStruct(obj) }
-
-func (a *ginAdapter) Engine() any { return a.validator.engine }
 
 // ValidateStruct 先执行标签校验，再回调 Validatable 复合校验。
 func (v *Validator) ValidateStruct(obj any) error {
@@ -238,7 +236,7 @@ var reservedShortNames = map[string]struct{}{
 	"system": {},
 	"me":     {},
 	"api":    {},
-	"cfiber":   {},
+	"cfiber": {},
 }
 
 // validateUsernameSlug 校验用户名的字符集。前置长度守卫（1-64 字符），防御恶意超长串造成正则回溯。
@@ -385,11 +383,11 @@ func PasswordStrength(field, password string) error {
 }
 
 // BindOptionalJSON 解析可省略的请求体：空体视为零值对象，非空体仍需是合法 JSON。
-func BindOptionalJSON(c *gin.Context, target any) error {
-	if c.Request.Body == nil || c.Request.ContentLength == 0 {
+func BindOptionalJSON(c fiber.Ctx, target any) error {
+	if len(c.Body()) == 0 {
 		return nil
 	}
-	if err := c.ShouldBindJSON(target); !errors.Is(err, io.EOF) {
+	if err := c.Bind().JSON(target); !errors.Is(err, io.EOF) {
 		return err
 	}
 	return nil

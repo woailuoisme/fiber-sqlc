@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -23,10 +25,9 @@ import (
 	"cfiber/pkg/payment/enum"
 )
 
-// setupPaymentTest 构造测试用的 Gin 引擎、服务实例与 Fake 支付管理器。
-func setupPaymentTest(t *testing.T) (*gin.Engine, *service.PaymentService, *platformPayment.Manager) {
+// setupPaymentTest 构造测试用的 Fiber 应用、服务实例与 Fake 支付管理器。
+func setupPaymentTest(t *testing.T) (*fiber.App, *service.PaymentService, *platformPayment.Manager) {
 	t.Helper()
-	gin.SetMode(gin.TestMode)
 
 	cfg := &config.Config{
 		App: config.AppConfig{
@@ -45,12 +46,29 @@ func setupPaymentTest(t *testing.T) (*gin.Engine, *service.PaymentService, *plat
 	svc := service.NewPaymentService(mgr, nil, cfg, nil)
 	handler := handler.NewPaymentHandler(svc)
 
-	engine := gin.New()
-	engine.Use(global.New(global.Deps{}).ErrorHandler())
-	v1 := engine.Group("/v1")
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.HandleError,
+	})
+	v1 := app.Group("/v1")
 	route.RegisterPaymentRoutes(v1, handler, nil)
 
-	return engine, svc, mgr
+	return app, svc, mgr
+}
+
+// testRequest 驱动一次 HTTP 测试并将 Fiber 响应适配为 httptest.ResponseRecorder。
+func testRequest(t *testing.T, app *fiber.App, req *http.Request) *httptest.ResponseRecorder {
+	t.Helper()
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	rec := httptest.NewRecorder()
+	rec.Code = resp.StatusCode
+	maps.Copy(rec.Header(), resp.Header)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	_, _ = rec.Body.Write(body)
+	return rec
 }
 
 // getFakeProvider 从管理器中提取指定渠道的 Fake Provider。
@@ -93,7 +111,7 @@ func (r *recordingCallbackHandler) OnRefundSuccess(_ context.Context, res *platf
 }
 
 func TestHandleNotification_WechatPaymentSuccess(t *testing.T) {
-	engine, svc, mgr := setupPaymentTest(t)
+	app, svc, mgr := setupPaymentTest(t)
 	fake := getFakeProvider(t, mgr, enum.PaymentChannelWechat)
 
 	recorder := &recordingCallbackHandler{}
@@ -117,9 +135,7 @@ func TestHandleNotification_WechatPaymentSuccess(t *testing.T) {
 		bytes.NewBufferString(`{"id":"NOTIFY_WX_001"}`),
 	)
 	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	engine.ServeHTTP(w, req)
+	w := testRequest(t, app, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
@@ -132,7 +148,7 @@ func TestHandleNotification_WechatPaymentSuccess(t *testing.T) {
 }
 
 func TestHandleNotification_WechatRefundSuccess(t *testing.T) {
-	engine, svc, mgr := setupPaymentTest(t)
+	app, svc, mgr := setupPaymentTest(t)
 	fake := getFakeProvider(t, mgr, enum.PaymentChannelWechat)
 
 	recorder := &recordingCallbackHandler{}
@@ -157,9 +173,7 @@ func TestHandleNotification_WechatRefundSuccess(t *testing.T) {
 		bytes.NewBufferString(`{"id":"NOTIFY_WX_REFUND_001"}`),
 	)
 	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	engine.ServeHTTP(w, req)
+	w := testRequest(t, app, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.JSONEq(t, `{"code":"SUCCESS","message":"OK"}`, w.Body.String())
@@ -170,7 +184,7 @@ func TestHandleNotification_WechatRefundSuccess(t *testing.T) {
 }
 
 func TestHandleNotification_AlipayPaymentSuccess(t *testing.T) {
-	engine, svc, mgr := setupPaymentTest(t)
+	app, svc, mgr := setupPaymentTest(t)
 	fake := getFakeProvider(t, mgr, enum.PaymentChannelAlipay)
 
 	recorder := &recordingCallbackHandler{}
@@ -194,9 +208,7 @@ func TestHandleNotification_AlipayPaymentSuccess(t *testing.T) {
 		bytes.NewBufferString(`out_trade_no=ORDER_ALI_001&trade_status=TRADE_SUCCESS`),
 	)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	w := httptest.NewRecorder()
-
-	engine.ServeHTTP(w, req)
+	w := testRequest(t, app, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Header().Get("Content-Type"), "text/plain")
@@ -207,7 +219,7 @@ func TestHandleNotification_AlipayPaymentSuccess(t *testing.T) {
 }
 
 func TestHandleNotification_CustomAppKey(t *testing.T) {
-	engine, svc, mgr := setupPaymentTest(t)
+	app, svc, mgr := setupPaymentTest(t)
 	// 默认回调处理器会失败关闭（未接线业务时不得回执成功），本用例聚焦 app 参数路由，故注入记录器。
 	svc.SetCallbackHandler(&recordingCallbackHandler{})
 	fake := getFakeProvider(t, mgr, enum.PaymentChannelWechat)
@@ -228,9 +240,7 @@ func TestHandleNotification_CustomAppKey(t *testing.T) {
 		bytes.NewBufferString(`{}`),
 	)
 	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	engine.ServeHTTP(w, req)
+	w := testRequest(t, app, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.JSONEq(t, `{"code":"SUCCESS","message":"OK"}`, w.Body.String())
@@ -238,7 +248,7 @@ func TestHandleNotification_CustomAppKey(t *testing.T) {
 
 func TestHandleNotification_BusinessFailure_TriggersRetry(t *testing.T) {
 	t.Run("微信业务消费报错返回FAIL应答", func(t *testing.T) {
-		engine, svc, mgr := setupPaymentTest(t)
+		app, svc, mgr := setupPaymentTest(t)
 		fake := getFakeProvider(t, mgr, enum.PaymentChannelWechat)
 
 		// 注入业务处理失败
@@ -259,9 +269,7 @@ func TestHandleNotification_BusinessFailure_TriggersRetry(t *testing.T) {
 			bytes.NewBufferString(`{}`),
 		)
 		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-
-		engine.ServeHTTP(w, req)
+		w := testRequest(t, app, req)
 
 		// 微信端要求返回 200 且 body 包含 FAIL 触发重试
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -269,7 +277,7 @@ func TestHandleNotification_BusinessFailure_TriggersRetry(t *testing.T) {
 	})
 
 	t.Run("支付宝业务消费报错返回fail应答", func(t *testing.T) {
-		engine, svc, mgr := setupPaymentTest(t)
+		app, svc, mgr := setupPaymentTest(t)
 		fake := getFakeProvider(t, mgr, enum.PaymentChannelAlipay)
 
 		svc.SetCallbackHandler(&failingCallbackHandler{err: errors.New("external inventory deduction failed")})
@@ -289,9 +297,7 @@ func TestHandleNotification_BusinessFailure_TriggersRetry(t *testing.T) {
 			bytes.NewBufferString(`{}`),
 		)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		w := httptest.NewRecorder()
-
-		engine.ServeHTTP(w, req)
+		w := testRequest(t, app, req)
 
 		// 支付宝要求返回 fail 字符串触发重试
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -300,22 +306,20 @@ func TestHandleNotification_BusinessFailure_TriggersRetry(t *testing.T) {
 }
 
 func TestHandleNotification_UnsupportedChannel(t *testing.T) {
-	engine, _, _ := setupPaymentTest(t)
+	app, _, _ := setupPaymentTest(t)
 
 	req := httptest.NewRequest(
 		http.MethodPost,
 		"/v1/payments/notify/paypal",
 		bytes.NewBufferString(`{}`),
 	)
-	w := httptest.NewRecorder()
-
-	engine.ServeHTTP(w, req)
+	w := testRequest(t, app, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestHandleNotification_VerifySignatureFailure(t *testing.T) {
-	engine, _, _ := setupPaymentTest(t)
+	app, _, _ := setupPaymentTest(t)
 
 	// Fake Provider 队列未预填任何通知时，ParseNotification 会报错模拟验签/解析失败
 	req := httptest.NewRequest(
@@ -324,16 +328,14 @@ func TestHandleNotification_VerifySignatureFailure(t *testing.T) {
 		bytes.NewBufferString(`{"invalid":"signature"}`),
 	)
 	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	engine.ServeHTTP(w, req)
+	w := testRequest(t, app, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.JSONEq(t, `{"code":"FAIL","message":"FAIL"}`, w.Body.String())
 }
 
 func TestHandleAlipayReturn_Success(t *testing.T) {
-	engine, _, mgr := setupPaymentTest(t)
+	app, _, mgr := setupPaymentTest(t)
 	fake := getFakeProvider(t, mgr, enum.PaymentChannelAlipay)
 
 	fake.QueueNotification(&platformPayment.Notification{
@@ -350,9 +352,7 @@ func TestHandleAlipayReturn_Success(t *testing.T) {
 		"/v1/payments/return/alipay?out_trade_no=ORDER_ALI_RETURN_001&trade_status=TRADE_SUCCESS",
 		nil,
 	)
-	w := httptest.NewRecorder()
-
-	engine.ServeHTTP(w, req)
+	w := testRequest(t, app, req)
 
 	assert.Equal(t, http.StatusFound, w.Code)
 	expectedURL := "https://shop.example.com/orders/ORDER_ALI_RETURN_001?status=success"
@@ -360,7 +360,7 @@ func TestHandleAlipayReturn_Success(t *testing.T) {
 }
 
 func TestHandleAlipayReturn_Failure(t *testing.T) {
-	engine, _, _ := setupPaymentTest(t)
+	app, _, _ := setupPaymentTest(t)
 
 	// 未注入通知，模拟验签失败
 	req := httptest.NewRequest(
@@ -368,9 +368,7 @@ func TestHandleAlipayReturn_Failure(t *testing.T) {
 		"/v1/payments/return/alipay?out_trade_no=ORDER_ALI_RETURN_002",
 		nil,
 	)
-	w := httptest.NewRecorder()
-
-	engine.ServeHTTP(w, req)
+	w := testRequest(t, app, req)
 
 	assert.Equal(t, http.StatusFound, w.Code)
 	expectedURL := "https://shop.example.com/orders?status=failed"
@@ -378,7 +376,6 @@ func TestHandleAlipayReturn_Failure(t *testing.T) {
 }
 
 func TestHandleNotification_GatewayNotInitialized(t *testing.T) {
-	gin.SetMode(gin.TestMode)
 	cfg := &config.Config{
 		App: config.AppConfig{URL: "https://shop.example.com"},
 	}
@@ -386,8 +383,10 @@ func TestHandleNotification_GatewayNotInitialized(t *testing.T) {
 	svc := service.NewPaymentService(nil, nil, cfg, nil)
 	handler := handler.NewPaymentHandler(svc)
 
-	engine := gin.New()
-	v1 := engine.Group("/v1")
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.HandleError,
+	})
+	v1 := app.Group("/v1")
 	route.RegisterPaymentRoutes(v1, handler, nil)
 
 	req := httptest.NewRequest(
@@ -395,9 +394,7 @@ func TestHandleNotification_GatewayNotInitialized(t *testing.T) {
 		"/v1/payments/notify/wechat",
 		bytes.NewBufferString(`{}`),
 	)
-	w := httptest.NewRecorder()
-
-	engine.ServeHTTP(w, req)
+	w := testRequest(t, app, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.JSONEq(t, `{"code":"FAIL","message":"FAIL"}`, w.Body.String())

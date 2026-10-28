@@ -3,48 +3,51 @@ package global
 import (
 	"errors"
 
-	gini18n "github.com/gin-contrib/i18n"
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	govalidator "github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v3"
 
 	"cfiber/pkg/errs"
 )
 
-// ErrorHandler 把 c.Errors 渲染为统一 JSON 错误信封，并把校验明细翻译成请求语言。
-// 官方无统一错误信封，属项目自建。
-func (m *Middleware) ErrorHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
-
-		if len(c.Errors) == 0 || c.Writer.Written() {
-			return
-		}
-
-		err := c.Errors.Last().Err
-		if fields, ok := m.extractValidationFields(c, err); ok {
-			err = errs.Validation(fields)
-		}
-
-		errs.Render(c, err)
-	}
+// ErrorHandler 返回可直接注入 fiber.Config.ErrorHandler 的错误处理函数。
+func (m *Middleware) ErrorHandler() fiber.ErrorHandler {
+	return m.HandleError
 }
 
-// resolveLanguage 取当前请求语言：优先 gin-contrib/i18n 的协商结果，其次 Translator 协商。
-func (m *Middleware) resolveLanguage(c *gin.Context) string {
-	if c.Value("i18n") != nil {
-		return gini18n.GetCurrentLanguage(c).String()
+// HandleError 处理所有中间件、Handler 与 Panic 产生的错误，并渲染统一 JSON 错误信封。
+func (m *Middleware) HandleError(c fiber.Ctx, err error) error {
+	if err == nil {
+		return nil
 	}
 
-	lang := c.GetHeader("Accept-Language")
-	if m.translator == nil {
+	if fields, ok := m.extractValidationFields(c, err); ok {
+		err = errs.Validation(fields)
+	}
+
+	return errs.Render(c, err)
+}
+
+// HandleError 作为全局默认错误处理函数，供 fiber.Config.ErrorHandler 注入。
+func HandleError(c fiber.Ctx, err error) error {
+	defaultMw := New(Deps{})
+	return defaultMw.HandleError(c, err)
+}
+
+// resolveLanguage 取当前请求语言。
+func (m *Middleware) resolveLanguage(c fiber.Ctx) string {
+	if lang := LanguageFromContext(c); lang != "" {
 		return lang
 	}
-	return m.translator.Language(lang)
+
+	acceptLang := c.Get(fiber.HeaderAcceptLanguage)
+	if m.translator == nil {
+		return acceptLang
+	}
+	return m.translator.Language(acceptLang)
 }
 
 // extractValidationFields 提取并翻译入参校验错误字典。
-func (m *Middleware) extractValidationFields(c *gin.Context, err error) (map[string][]string, bool) {
+func (m *Middleware) extractValidationFields(c fiber.Ctx, err error) (map[string][]string, bool) {
 	lang := m.resolveLanguage(c)
 
 	if fields, ok := m.translateFieldKeys(lang, err); ok {
@@ -55,22 +58,7 @@ func (m *Middleware) extractValidationFields(c *gin.Context, err error) (map[str
 		return m.translateValidation(lang, valErr), true
 	}
 
-	sliceErr, ok := errors.AsType[binding.SliceValidationError](err)
-	if !ok {
-		return nil, false
-	}
-
-	fields := make(map[string][]string)
-	for _, subErr := range sliceErr {
-		subValErr, subOk := errors.AsType[govalidator.ValidationErrors](subErr)
-		if !subOk {
-			continue
-		}
-		for k, v := range m.translateValidation(lang, subValErr) {
-			fields[k] = append(fields[k], v...)
-		}
-	}
-	return fields, len(fields) > 0
+	return nil, false
 }
 
 // translateValidation 渲染一条校验失败；未注入校验器时退回原始字段详情。

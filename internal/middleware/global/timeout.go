@@ -4,40 +4,34 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gin-contrib/timeout"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/timeout"
 
 	"cfiber/pkg/errs"
 )
 
-// Timeout 基于 gin-contrib/timeout 控制请求超时，超时输出 504，长连接自动豁免。
-func (m *Middleware) Timeout() gin.HandlerFunc {
+// Timeout 基于 fiber/v3/middleware/timeout 控制请求超时，超时输出 504，长连接自动豁免。
+func (m *Middleware) Timeout() fiber.Handler {
 	if m.requestTimeout <= 0 {
-		return func(c *gin.Context) {
-			c.Next()
+		return func(c fiber.Ctx) error {
+			return c.Next()
 		}
 	}
 
-	base := timeout.New(
-		timeout.WithTimeout(m.requestTimeout),
-		timeout.WithResponse(func(c *gin.Context) {
-			errs.Render(c, errs.GatewayTimeout(context.DeadlineExceeded))
-		}),
-	)
-
-	return func(c *gin.Context) {
-		// 对 WebSocket 升级握手及 SSE 流式长连接请求进行超时豁免
-		if isStreamingRequest(c) {
-			c.Next()
-			return
-		}
-
-		base(c)
-	}
+	return timeout.New(func(c fiber.Ctx) error {
+		return c.Next()
+	}, timeout.Config{
+		Timeout: m.requestTimeout,
+		Next:    isStreamingRequest,
+		OnTimeout: func(c fiber.Ctx) error {
+			_ = errs.Render(c, errs.GatewayTimeout(context.DeadlineExceeded))
+			return fiber.NewError(fiber.StatusGatewayTimeout, "GATEWAY_TIMEOUT")
+		},
+	})
 }
 
 // isStreamingRequest 判断是否为 WebSocket 握手或 SSE 长连接，这类请求豁免超时。
-func isStreamingRequest(c *gin.Context) bool {
-	return strings.EqualFold(c.GetHeader("Upgrade"), "websocket") ||
-		strings.Contains(c.GetHeader("Accept"), "text/event-stream")
+func isStreamingRequest(c fiber.Ctx) bool {
+	return strings.EqualFold(c.Get("Upgrade"), "websocket") ||
+		strings.Contains(c.Get("Accept"), "text/event-stream")
 }

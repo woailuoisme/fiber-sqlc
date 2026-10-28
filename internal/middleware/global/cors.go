@@ -4,35 +4,50 @@ import (
 	"slices"
 	"time"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 )
 
-// CORS 【全局中间件】基于 gin-contrib/cors 统一处理跨域资源共享与 OPTIONS 预检请求。
-func (m *Middleware) CORS() gin.HandlerFunc {
+// CORS 【全局中间件】基于 fiber/v3/middleware/cors 统一处理跨域资源共享与 OPTIONS 预检请求。
+func (m *Middleware) CORS() fiber.Handler {
 	cfg := cors.Config{
 		AllowMethods: []string{
-			"GET", "POST", "PATCH", "PUT", "DELETE", "HEAD", "OPTIONS",
+			fiber.MethodGet,
+			fiber.MethodPost,
+			fiber.MethodPatch,
+			fiber.MethodPut,
+			fiber.MethodDelete,
+			fiber.MethodHead,
+			fiber.MethodOptions,
 		},
 		AllowHeaders: []string{
-			"Authorization", "Content-Type", "Accept", "x-request-id", "Idempotency-Key", "Accept-Language",
+			fiber.HeaderAuthorization,
+			fiber.HeaderContentType,
+			fiber.HeaderAccept,
+			"x-request-id",
+			"Idempotency-Key",
+			fiber.HeaderAcceptLanguage,
 		},
 		ExposeHeaders: []string{
-			"x-request-id", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "Retry-After",
+			"x-request-id",
+			"X-RateLimit-Limit",
+			"X-RateLimit-Remaining",
+			"X-RateLimit-Reset",
+			fiber.HeaderRetryAfter,
 		},
-		MaxAge: 12 * time.Hour,
+		MaxAge: int((12 * time.Hour).Seconds()),
 	}
 
 	switch {
 	case slices.Contains(m.cors.AllowedOrigins, "*"):
-		cfg.AllowAllOrigins = true
+		cfg.AllowOrigins = []string{"*"}
 		cfg.AllowCredentials = false // 遵循 W3C 规范：通配符禁止回显允许凭证
 	case len(m.cors.AllowedOrigins) > 0:
 		cfg.AllowOrigins = m.cors.AllowedOrigins
 		cfg.AllowCredentials = true
 	default:
-		return func(c *gin.Context) {
-			c.Next()
+		return func(c fiber.Ctx) error {
+			return c.Next()
 		}
 	}
 

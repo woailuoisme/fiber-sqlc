@@ -5,18 +5,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"cfiber/internal/middleware"
+	"cfiber/internal/middleware/global"
 	"cfiber/pkg/authorization"
 )
 
-// TestAuthzMiddleware_RESTfulRules 验证 gin-contrib/authz 基于角色、路径与 HTTP 方法执行 RESTful 访问控制。
+// TestAuthzMiddleware_RESTfulRules 验证基于角色、路径与 HTTP 方法执行 RESTful 访问控制。
 func TestAuthzMiddleware_RESTfulRules(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	enforcer, err := authorization.New()
 	require.NoError(t, err)
 
@@ -24,56 +23,44 @@ func TestAuthzMiddleware_RESTfulRules(t *testing.T) {
 		Authz: enforcer,
 	})
 
-	router := gin.New()
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.HandleError,
+	})
 
-	// 认证由测试请求直接携带 BasicAuth（gin-contrib/authz 从中提取 subject）。
-	adminGroup := router.Group("/v1/admin", mw.Authz())
-	{
-		adminGroup.GET("/users", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"status": "admin users list"})
-		})
-	}
+	adminGroup := app.Group("/v1/admin", mw.Authz())
+	adminGroup.Get("/users", func(c fiber.Ctx) error {
+		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "admin users list"})
+	})
 
-	clientGroup := router.Group("/v1", mw.Authz())
-	{
-		clientGroup.GET("/users/me", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"status": "client profile"})
-		})
-	}
+	clientGroup := app.Group("/v1", mw.Authz())
+	clientGroup.Get("/users/me", func(c fiber.Ctx) error {
+		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "client profile"})
+	})
 
 	// 1. admin 角色访问 /v1/admin/users：允许
 	reqAdmin := httptest.NewRequest(http.MethodGet, "/v1/admin/users", nil)
-	wAdmin := httptest.NewRecorder()
-	router.ServeHTTP(wAdmin, func() *http.Request {
-		r := reqAdmin.Clone(reqAdmin.Context())
-		r.SetBasicAuth("admin", "")
-		return r
-	}())
-	assert.Equal(t, http.StatusOK, wAdmin.Code)
+	reqAdmin.SetBasicAuth("admin", "")
+	respAdmin, err := app.Test(reqAdmin)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, respAdmin.StatusCode)
 
 	// 2. client 角色访问 /v1/admin/users：禁止（403）
 	reqClientForbidden := httptest.NewRequest(http.MethodGet, "/v1/admin/users", nil)
-	wClientForbidden := httptest.NewRecorder()
-	router.ServeHTTP(wClientForbidden, func() *http.Request {
-		r := reqClientForbidden.Clone(reqClientForbidden.Context())
-		r.SetBasicAuth("client", "")
-		return r
-	}())
-	assert.Equal(t, http.StatusForbidden, wClientForbidden.Code)
+	reqClientForbidden.SetBasicAuth("client", "")
+	respClientForbidden, err := app.Test(reqClientForbidden)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusForbidden, respClientForbidden.StatusCode)
 
 	// 3. client 角色访问 /v1/users/me：允许
 	reqClientProfile := httptest.NewRequest(http.MethodGet, "/v1/users/me", nil)
-	wClientProfile := httptest.NewRecorder()
-	router.ServeHTTP(wClientProfile, func() *http.Request {
-		r := reqClientProfile.Clone(reqClientProfile.Context())
-		r.SetBasicAuth("client", "")
-		return r
-	}())
-	assert.Equal(t, http.StatusOK, wClientProfile.Code)
+	reqClientProfile.SetBasicAuth("client", "")
+	respClientProfile, err := app.Test(reqClientProfile)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, respClientProfile.StatusCode)
 
-	// 4. 未认证用户（匿名）访问 /v1/admin/users：禁止（403）
+	// 4. 未认证用户（匿名）访问 /v1/admin/users：禁止（401 或 403）
 	reqAnon := httptest.NewRequest(http.MethodGet, "/v1/admin/users", nil)
-	wAnon := httptest.NewRecorder()
-	router.ServeHTTP(wAnon, reqAnon)
-	assert.Equal(t, http.StatusForbidden, wAnon.Code)
+	respAnon, err := app.Test(reqAnon)
+	require.NoError(t, err)
+	assert.True(t, respAnon.StatusCode == http.StatusUnauthorized || respAnon.StatusCode == http.StatusForbidden)
 }

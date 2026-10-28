@@ -3,10 +3,10 @@ package handler
 import (
 	"cmp"
 	"context"
-	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/healthcheck"
 	"github.com/rs/zerolog"
 
 	"cfiber/internal/service"
@@ -17,6 +17,8 @@ import (
 
 // probeTimeout 是就绪探针调度的总超时时限。
 const probeTimeout = 2 * time.Second
+
+var livenessHandler = healthcheck.New()
 
 // SystemHandler 是探针端点的 HTTP 适配层。
 type SystemHandler struct {
@@ -30,20 +32,18 @@ func NewSystemHandler(svc *service.SystemService, log *zerolog.Logger) *SystemHa
 }
 
 // Index 处理 GET / 根路径请求。
-func (h *SystemHandler) Index(c *gin.Context) {
-	h.Liveness(c)
+func (h *SystemHandler) Index(c fiber.Ctx) error {
+	return h.Liveness(c)
 }
 
-// Liveness 处理 GET /livez 存活探针请求。
-//
-// 存活探针只看状态码（k8s 约定 200–399 即健康），因此返回纯文本 ok：
-func (h *SystemHandler) Liveness(c *gin.Context) {
-	c.String(http.StatusOK, "ok")
+// Liveness 基于官方 healthcheck 中间件处理 GET /livez 存活探针请求。
+func (h *SystemHandler) Liveness(c fiber.Ctx) error {
+	return livenessHandler(c)
 }
 
 // Readiness 处理 GET /readyz 就绪探针请求：并发探测各依赖，关键项失败返回 503，非关键项失败返回 200 degraded。
-func (h *SystemHandler) Readiness(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), probeTimeout)
+func (h *SystemHandler) Readiness(c fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(c.Context(), probeTimeout)
 	defer cancel()
 
 	result, errs := h.svc.Check(ctx)
@@ -52,8 +52,7 @@ func (h *SystemHandler) Readiness(c *gin.Context) {
 	}
 
 	if result.Status == ready.StatusNotReady {
-		c.JSON(result.StatusCode(), result)
-		return
+		return c.Status(result.StatusCode()).JSON(result)
 	}
-	response.OK(c, result)
+	return response.OK(c, result)
 }

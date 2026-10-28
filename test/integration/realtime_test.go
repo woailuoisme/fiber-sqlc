@@ -12,8 +12,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
@@ -21,13 +21,14 @@ import (
 	"time"
 
 	"github.com/centrifugal/gocent/v3"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/websocket"
 
 	"cfiber/internal/config"
 	"cfiber/internal/handler"
+	"cfiber/internal/middleware/global"
 	"cfiber/internal/service"
 	platformRealtime "cfiber/pkg/realtime"
 )
@@ -290,33 +291,39 @@ func TestRealtime_ProxySubscribeCallbackContract(t *testing.T) {
 	})
 	handler := handler.NewRealtimeHandler(svc)
 
-	router := gin.New()
-	router.POST("/v1/realtime/proxy/subscribe", handler.ProxySubscribe)
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.HandleError,
+	})
+	app.Post("/v1/realtime/proxy/subscribe", handler.ProxySubscribe)
 
 	// 1. 合法请求与有效签名
-	w := httptest.NewRecorder()
 	httpReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "/v1/realtime/proxy/subscribe", strings.NewReader(string(rawBody)))
 	require.NoError(t, err)
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("X-Centrifugo-Signature", signature)
 
-	router.ServeHTTP(w, httpReq)
-	assert.Equal(t, http.StatusOK, w.Code)
+	resp, err := app.Test(httpReq)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 	var respBody map[string]any
-	err = json.Unmarshal(w.Body.Bytes(), &respBody)
+	respBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	err = json.Unmarshal(respBytes, &respBody)
 	require.NoError(t, err)
 	assert.NotNil(t, respBody["result"], "合法的订阅请求应返回 result 字段以准许订阅")
 
 	// 2. 伪造/非法签名应返回 403 Forbidden
-	wBad := httptest.NewRecorder()
 	badReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "/v1/realtime/proxy/subscribe", strings.NewReader(string(rawBody)))
 	require.NoError(t, err)
 	badReq.Header.Set("Content-Type", "application/json")
 	badReq.Header.Set("X-Centrifugo-Signature", "tampered-bad-signature")
 
-	router.ServeHTTP(wBad, badReq)
-	assert.Equal(t, http.StatusForbidden, wBad.Code)
+	badResp, err := app.Test(badReq)
+	require.NoError(t, err)
+	defer func() { _ = badResp.Body.Close() }()
+	assert.Equal(t, http.StatusForbidden, badResp.StatusCode)
 }
 
 // TestRealtime_WebSocketClientStreamingVerification 真实验证客户端经 WebSocket 握手并实时接收推送事件。

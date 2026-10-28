@@ -13,9 +13,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/casbin/casbin/v2"
-	"github.com/casbin/casbin/v2/model"
-	stringadapter "github.com/casbin/casbin/v2/persist/string-adapter"
+	"github.com/casbin/casbin/v3"
+	"github.com/casbin/casbin/v3/model"
+	stringadapter "github.com/casbin/casbin/v3/persist/string-adapter"
 
 	"cfiber/pkg/authentication"
 	"cfiber/pkg/errs"

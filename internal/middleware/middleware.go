@@ -5,7 +5,7 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 
 	"cfiber/internal/config"
@@ -18,6 +18,7 @@ import (
 type Deps struct {
 	AuthManager *authentication.Manager
 	Cache       cache.Store
+	Storage     fiber.Storage
 	Authz       *authorization.Enforcer
 	Logger      *zerolog.Logger
 	Limiter     config.LimiterConfig
@@ -26,13 +27,13 @@ type Deps struct {
 
 // Middleware 持有路由级中间件所需的依赖。
 type Middleware struct {
-	authManager  *authentication.Manager
-	cache        cache.Store
-	limiterStore RateLimiterStore
-	authz        *authorization.Enforcer
-	logger       *zerolog.Logger
-	limiter      config.LimiterConfig
-	signingKey   string
+	authManager *authentication.Manager
+	cache       cache.Store
+	storage     fiber.Storage
+	authz       *authorization.Enforcer
+	logger      *zerolog.Logger
+	limiter     config.LimiterConfig
+	signingKey  string
 }
 
 // New 构造路由中间件实例。
@@ -40,6 +41,7 @@ func New(deps Deps) *Middleware {
 	return &Middleware{
 		authManager: deps.AuthManager,
 		cache:       deps.Cache,
+		storage:     deps.Storage,
 		authz:       deps.Authz,
 		logger:      deps.Logger,
 		limiter:     deps.Limiter,
@@ -47,13 +49,12 @@ func New(deps Deps) *Middleware {
 	}
 }
 
-// SetLimiterStore 替换限流器底层存储实现（主要用于单元测试与自定义存储注入）。
-func (m *Middleware) SetLimiterStore(store RateLimiterStore) {
-	m.limiterStore = store
+// SetLimiterStorage 替换限流器底层存储实现（主要用于单元测试与自定义存储注入）。
+func (m *Middleware) SetLimiterStorage(storage fiber.Storage) {
+	m.storage = storage
 }
 
-// abortWithError 向上下文附加错误并立即中止后续处理。
-func abortWithError(c *gin.Context, err error) {
-	_ = c.Error(err)
-	c.Abort()
+// SetLimiterStore 为向后兼容保留的方法。
+func (m *Middleware) SetLimiterStore(storage fiber.Storage) {
+	m.storage = storage
 }

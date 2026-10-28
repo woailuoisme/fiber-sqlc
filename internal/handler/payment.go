@@ -1,9 +1,8 @@
 package handler
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
 
 	"cfiber/internal/dto"
 	"cfiber/internal/service"
@@ -40,50 +39,50 @@ func NewPaymentHandler(svc *service.PaymentService) *PaymentHandler {
 // @Success      200 {object} dto.CallbackAckResource "回调验签与业务消费成功"
 // @x-order      1
 // @Router       /payments/notify/{channel} [post]
-func (h *PaymentHandler) HandleNotification(c *gin.Context) {
+func (h *PaymentHandler) HandleNotification(c fiber.Ctx) error {
 	var pathParams dto.PaymentNotifyPathParams
-	if err := c.ShouldBindUri(&pathParams); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().URI(&pathParams); err != nil {
+		return err
 	}
 
 	channel := enum.PaymentChannel(pathParams.Channel)
 	if !channel.IsValid() {
 		// 报文里不拼接调用方原始输入，渠道值只进结构化日志。
-		logger.FromContext(c.Request.Context()).Warn().
+		logger.FromContext(c.Context()).Warn().
 			Str("channel", pathParams.Channel).
 			Msg("unsupported payment channel callback received")
-		err := errs.BadRequest(service.MsgUnsupportedChannel)
-		_ = c.Error(err)
-		return
+		return errs.BadRequest(service.MsgUnsupportedChannel)
 	}
 
 	if h.gateway == nil {
-		replyAck(c, platformPayment.FailureAck(channel))
-		return
+		return replyAck(c, platformPayment.FailureAck(channel))
+	}
+
+	httpReq, err := adaptor.ConvertRequest(c, true)
+	if err != nil {
+		return errs.BadRequest("failed to convert request for payment parsing")
 	}
 
 	// 1. 严格验签并解析 HTTP 报文 (微信商户证书/微信平台证书/支付宝公钥证书)
-	notification, err := h.gateway.ParseNotification(c.Request.Context(), channel, pathParams.App, c.Request)
+	notification, err := h.gateway.ParseNotification(c.Context(), channel, pathParams.App, httpReq)
 	if err != nil {
-		logger.FromContext(c.Request.Context()).Warn().
+		logger.FromContext(c.Context()).Warn().
 			Err(err).
 			Str("channel", channel.String()).
 			Str("app_key", pathParams.App).
 			Msg("payment callback verification or parsing failed")
 
-		replyAck(c, platformPayment.FailureAck(channel))
-		return
+		return replyAck(c, platformPayment.FailureAck(channel))
 	}
 
 	// 2. 将解析好的纯领域通知交给 Service 协调幂等控制与事件分发
-	ack, err := h.svc.ProcessNotification(c.Request.Context(), channel, notification)
+	ack, err := h.svc.ProcessNotification(c.Context(), channel, notification)
 	if err != nil {
-		_ = c.Error(err)
+		logger.FromContext(c.Context()).Error().Err(err).Msg("payment notification processing failed")
 	}
 
 	// 渠道统一按渠道协议返回 200 及对应报文内容。
-	replyAck(c, ack)
+	return replyAck(c, ack)
 }
 
 // HandleAlipayReturn 接收支付宝前端客户端同步重定向跳转 (return_url)。
@@ -96,25 +95,28 @@ func (h *PaymentHandler) HandleNotification(c *gin.Context) {
 // @Success      302 {string} string "重定向至前端订单展示页"
 // @x-order      2
 // @Router       /payments/return/alipay [get]
-func (h *PaymentHandler) HandleAlipayReturn(c *gin.Context) {
-	ctx := c.Request.Context()
+func (h *PaymentHandler) HandleAlipayReturn(c fiber.Ctx) error {
+	ctx := c.Context()
 	log := logger.FromContext(ctx)
 
 	if h.gateway == nil {
-		c.Redirect(http.StatusFound, h.svc.FailureRedirectURL())
-		return
+		return c.Redirect().Status(fiber.StatusFound).To(h.svc.FailureRedirectURL())
+	}
+
+	httpReq, err := adaptor.ConvertRequest(c, false)
+	if err != nil {
+		return c.Redirect().Status(fiber.StatusFound).To(h.svc.FailureRedirectURL())
 	}
 
 	// 对 URL Query 参数进行支付宝公钥验签
-	notification, err := h.gateway.ParseNotification(ctx, enum.PaymentChannelAlipay, "", c.Request)
+	notification, err := h.gateway.ParseNotification(ctx, enum.PaymentChannelAlipay, "", httpReq)
 	if err != nil {
 		log.Warn().Err(err).Msg("alipay return verification failed, redirecting to order failure page")
-		c.Redirect(http.StatusFound, h.svc.FailureRedirectURL())
-		return
+		return c.Redirect().Status(fiber.StatusFound).To(h.svc.FailureRedirectURL())
 	}
 
 	var queryParams dto.AlipayReturnQueryParams
-	_ = c.ShouldBindQuery(&queryParams)
+	_ = c.Bind().Query(&queryParams)
 
 	outTradeNo := queryParams.OutTradeNo
 	if notification != nil && notification.Payment != nil && notification.Payment.OutTradeNo != "" {
@@ -127,10 +129,11 @@ func (h *PaymentHandler) HandleAlipayReturn(c *gin.Context) {
 		Str("redirect_url", redirectURL).
 		Msg("alipay return callback verified, redirecting to frontend")
 
-	c.Redirect(http.StatusFound, redirectURL)
+	return c.Redirect().Status(fiber.StatusFound).To(redirectURL)
 }
 
 // replyAck 将渠道应答报文写回 HTTP 响应。
-func replyAck(c *gin.Context, ack platformPayment.NotificationAck) {
-	c.Data(http.StatusOK, ack.ContentType, []byte(ack.Body))
+func replyAck(c fiber.Ctx, ack platformPayment.NotificationAck) error {
+	c.Set(fiber.HeaderContentType, ack.ContentType)
+	return c.Status(fiber.StatusOK).Send([]byte(ack.Body))
 }

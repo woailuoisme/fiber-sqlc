@@ -451,7 +451,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "\"usr_01J9X4N8Y0ABCD\"",
+                        "example": "\"0192e2b3-847e-7c5b-9d47-68198f16182f\"",
                         "description": "用户唯一标识",
                         "name": "id",
                         "in": "path",
@@ -488,7 +488,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "\"usr_01J9X4N8Y0ABCD\"",
+                        "example": "\"0192e2b3-847e-7c5b-9d47-68198f16182f\"",
                         "description": "用户唯一标识",
                         "name": "id",
                         "in": "path",
@@ -522,7 +522,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "\"usr_01J9X4N8Y0ABCD\"",
+                        "example": "\"0192e2b3-847e-7c5b-9d47-68198f16182f\"",
                         "description": "用户唯一标识",
                         "name": "id",
                         "in": "path",

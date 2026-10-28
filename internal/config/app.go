@@ -8,13 +8,6 @@ import (
 	"time"
 )
 
-// gin 运行模式枚举值。
-const (
-	ModeDebug   = "debug"
-	ModeRelease = "release"
-	ModeTest    = "test"
-)
-
 // knownEnvs 声明 APP_ENV 合法环境名清单。
 var knownEnvs = []string{"local", "development", "test", "staging", "production"}
 
@@ -24,7 +17,6 @@ type AppConfig struct {
 	Env        string `env:"APP_ENV" envDefault:"local"`
 	Debug      bool   `env:"APP_DEBUG"`
 	Port       int    `env:"APP_PORT" envDefault:"3300"`
-	GinMode    string `env:"GIN_MODE"`
 	EnableDocs bool   `env:"ENABLE_DOCS"`
 	URL        string `env:"APP_URL" envDefault:"http://localhost:3300"`
 	Timezone   string `env:"APP_TIMEZONE" envDefault:"UTC"`
@@ -59,17 +51,6 @@ func (a *AppConfig) Location() *time.Location {
 		return loc
 	}
 	return time.UTC
-}
-
-// ResolveGinMode 计算 gin 运行模式，优先显式 GIN_MODE，未设置时按环境推导。
-func (c *Config) ResolveGinMode() string {
-	if c.App.GinMode != "" {
-		return c.App.GinMode
-	}
-	if c.IsLocal() {
-		return ModeDebug
-	}
-	return ModeRelease
 }
 
 // IsLocal 报告是否处于本地开发环境。

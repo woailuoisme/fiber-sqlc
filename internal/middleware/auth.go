@@ -2,50 +2,46 @@ package middleware
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"strings"
 
-	"github.com/gin-contrib/authz"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/contrib/v3/casbin/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/extractors"
 
 	"cfiber/pkg/authentication"
 	"cfiber/pkg/errs"
 )
 
+var bearerExtractor = extractors.FromAuthHeader("Bearer")
+
 // Auth 校验 Bearer 令牌并把认证身份注入上下文。
 // 守卫可缺省（用默认守卫）、指定单个（"client"/"admin"）或按序回退（mw.Auth("admin", "client")）。
-func (m *Middleware) Auth(guardNames ...string) gin.HandlerFunc {
+func (m *Middleware) Auth(guardNames ...string) fiber.Handler {
 	guards := parseGuards(guardNames)
 
-	return func(c *gin.Context) {
+	return func(c fiber.Ctx) error {
 		raw, err := bearerToken(c)
 		if err != nil {
-			abortWithError(c, err)
-			return
+			return err
 		}
 
 		if m.authManager == nil {
-			abortWithError(c, errs.Internal(errors.New("middleware: auth manager is required")))
-			return
+			return errs.Internal(errors.New("middleware: auth manager is required"))
 		}
 
-		reqCtx, err := m.authenticateWithManager(c.Request.Context(), raw, guards)
+		reqCtx, err := m.authenticateWithManager(c.Context(), raw, guards)
 		if err != nil {
-			abortWithError(c, err)
-			return
+			return err
 		}
 
 		if m.authz != nil {
 			reqCtx = authentication.WithGate(reqCtx, m.authz)
 		}
-		c.Request = c.Request.WithContext(reqCtx)
+		c.SetContext(reqCtx)
 
-		// 将已认证的角色信息注入 BasicAuth，使 gin-contrib/authz 原生自动提取 subject
-		if id, ok := authentication.FromContext(reqCtx); ok && id.Role != "" {
-			c.Request.SetBasicAuth(id.Role, "")
-		}
-
-		c.Next()
+		return c.Next()
 	}
 }
 
@@ -84,33 +80,55 @@ func (m *Middleware) authenticateWithManager(ctx context.Context, raw string, gu
 	return nil, lastErr
 }
 
-// Authz 【路由/组中间件】基于官方 gin-contrib/authz 执行 Casbin RESTful 路径与 HTTP 方法访问控制。
-func (m *Middleware) Authz() gin.HandlerFunc {
+// Authz 【路由/组中间件】基于官方 gofiber/contrib/v3/casbin/v2 执行 Casbin RESTful 路径与 HTTP 方法访问控制。
+func (m *Middleware) Authz() fiber.Handler {
 	if m.authz == nil {
-		return func(c *gin.Context) { c.Next() }
+		return func(c fiber.Ctx) error { return c.Next() }
 	}
-	return authz.NewAuthorizer(m.authz.CasbinEnforcer())
+
+	authorizer := casbin.New(casbin.Config{
+		Enforcer: m.authz.CasbinEnforcer(),
+		Lookup: func(c fiber.Ctx) string {
+			if id, ok := authentication.FromContext(c.Context()); ok && id.Role != "" {
+				return id.Role
+			}
+			if auth := c.Get(fiber.HeaderAuthorization); strings.HasPrefix(strings.ToLower(auth), "basic ") {
+				if payload, err := base64.StdEncoding.DecodeString(strings.TrimSpace(auth[6:])); err == nil {
+					parts := strings.SplitN(string(payload), ":", 2)
+					if len(parts) > 0 && parts[0] != "" {
+						return parts[0]
+					}
+				}
+			}
+			return ""
+		},
+		Unauthorized: func(c fiber.Ctx) error {
+			return errs.Unauthorized(errs.CodeAuthTokenInvalid, "Authentication is required")
+		},
+		Forbidden: func(c fiber.Ctx) error {
+			return errs.Forbidden("You are not allowed to perform this action")
+		},
+	})
+
+	return authorizer.RoutePermission()
 }
 
 // Can 按资源+动作做 Casbin 资源级鉴权。
 // 官方 authz 只支持 URL+Method，无法表达资源语义，故保留自建（路径级鉴权由 Authz 承担）。
-func (m *Middleware) Can(resource, action string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if _, ok := authentication.FromContext(c.Request.Context()); !ok {
-			abortWithError(c, errs.Unauthorized(errs.CodeAuthTokenInvalid, "Authentication is required"))
-			return
+func (m *Middleware) Can(resource, action string) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		if _, ok := authentication.FromContext(c.Context()); !ok {
+			return errs.Unauthorized(errs.CodeAuthTokenInvalid, "Authentication is required")
 		}
 
 		if m.authz == nil {
-			abortWithError(c, errs.Internal(errors.New("middleware: authz enforcer not configured")))
-			return
+			return errs.Internal(errors.New("middleware: authz enforcer not configured"))
 		}
 
-		if !m.authz.Can(c.Request.Context(), resource, action) {
-			abortWithError(c, errs.Forbidden("You are not allowed to perform this action"))
-			return
+		if !m.authz.Can(c.Context(), resource, action) {
+			return errs.Forbidden("You are not allowed to perform this action")
 		}
-		c.Next()
+		return c.Next()
 	}
 }
 
@@ -128,19 +146,22 @@ func parseGuards(guardNames []string) []string {
 	return guards
 }
 
-// bearerToken 从 Authorization 头提取 Bearer 令牌。
-func bearerToken(c *gin.Context) (string, error) {
-	header := strings.TrimSpace(c.GetHeader("Authorization"))
-	if header == "" {
-		return "", errs.Unauthorized(errs.CodeAuthTokenInvalid, "Authentication is required")
+// bearerToken 从 Authorization 头提取 Bearer 令牌，优先使用 Fiber RFC 兼容 Extractor。
+func bearerToken(c fiber.Ctx) (string, error) {
+	token, err := bearerExtractor.Extract(c)
+	if err != nil || token == "" {
+		header := strings.TrimSpace(c.Get(fiber.HeaderAuthorization))
+		if header == "" {
+			return "", errs.Unauthorized(errs.CodeAuthTokenInvalid, "Authentication is required")
+		}
+		parts := strings.Fields(header)
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+			return "", errs.Unauthorized(
+				errs.CodeAuthTokenInvalid,
+				"Authorization header must use the Bearer scheme",
+			)
+		}
+		return parts[1], nil
 	}
-
-	parts := strings.Fields(header)
-	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-		return "", errs.Unauthorized(
-			errs.CodeAuthTokenInvalid,
-			"Authorization header must use the Bearer scheme",
-		)
-	}
-	return parts[1], nil
+	return token, nil
 }

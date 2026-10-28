@@ -3,13 +3,14 @@ package middleware_test
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -100,8 +101,6 @@ func setupAuthEnv() (
 	*authentication.Guard[*sqlc.User],
 	*mockUserRepo,
 ) {
-	gin.SetMode(gin.TestMode)
-
 	store := newMemAuthBlacklistStore()
 	tokens := authentication.NewTokenIssuer(config.JWTConfig{
 		Secret:     "0123456789abcdef0123456789abcdef",
@@ -136,49 +135,38 @@ func setupAuthEnv() (
 func TestAuth_MissingOrMalformedHeader(t *testing.T) {
 	m, _, _, _, _ := setupAuthEnv()
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
-	router.GET("/protected", m.Auth(), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
+	app.Get("/protected", m.Auth(), func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
 	})
 
-	// 1. 缺失报头
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	testCases := []struct {
+		header string
+	}{
+		{""},
+		{"Basic dXNlcjpwYXNz"},
+		{"Bearer "},
+		{"Bearer"},
+		{"Bearer token1 token2"},
+	}
 
-	var errResp errs.Response
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &errResp))
-	assert.Equal(t, string(errs.CodeAuthTokenInvalid), errResp.Code)
+	for _, tc := range testCases {
+		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+		if tc.header != "" {
+			req.Header.Set("Authorization", tc.header)
+		}
+		resp, err := app.Test(req)
+		require.NoError(t, err)
 
-	// 2. 畸形 scheme
-	req = httptest.NewRequest(http.MethodGet, "/protected", nil)
-	req.Header.Set("Authorization", "Basic dXNlcjpwYXNz")
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-
-	// 3. 空 Bearer
-	req = httptest.NewRequest(http.MethodGet, "/protected", nil)
-	req.Header.Set("Authorization", "Bearer ")
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-
-	// 4. 仅 Bearer 无后续参数
-	req = httptest.NewRequest(http.MethodGet, "/protected", nil)
-	req.Header.Set("Authorization", "Bearer")
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-
-	// 5. 多段超额参数
-	req = httptest.NewRequest(http.MethodGet, "/protected", nil)
-	req.Header.Set("Authorization", "Bearer token1 token2")
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		var errResp errs.Response
+		require.NoError(t, json.Unmarshal(body, &errResp))
+		assert.Equal(t, string(errs.CodeAuthTokenInvalid), errResp.Code)
+	}
 }
 
 // TestAuth_DefaultGuardSuccess 验证默认守卫 (client) 成功解析令牌并将身份写入上下文，同时支持多空格或制表符容错。
@@ -195,16 +183,17 @@ func TestAuth_DefaultGuardSuccess(t *testing.T) {
 	sess, err := clientGuard.Login(context.Background(), repo.users["usr_client_1"])
 	require.NoError(t, err)
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
 
 	var capturedID authentication.Identity
-	router.GET("/client/me", m.Auth(), func(c *gin.Context) {
-		id, ok := authentication.FromContext(c.Request.Context())
+	app.Get("/client/me", m.Auth(), func(c fiber.Ctx) error {
+		id, ok := authentication.FromContext(c.Context())
 		if ok {
 			capturedID = id
 		}
-		c.Status(http.StatusOK)
+		return c.SendStatus(http.StatusOK)
 	})
 
 	// 验证标准单空格、连续多空格及制表符均可正确提取
@@ -218,10 +207,11 @@ func TestAuth_DefaultGuardSuccess(t *testing.T) {
 		capturedID = authentication.Identity{}
 		req := httptest.NewRequest(http.MethodGet, "/client/me", nil)
 		req.Header.Set("Authorization", h)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		resp, err := app.Test(req)
+		require.NoError(t, err)
+		_ = resp.Body.Close()
 
-		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, "usr_client_1", capturedID.UserID)
 		assert.Equal(t, string(enum.RoleUser), capturedID.Role)
 	}
@@ -248,30 +238,34 @@ func TestAuth_NamedAdminGuard(t *testing.T) {
 	adminSess, err := adminGuard.Login(context.Background(), repo.users["usr_admin"])
 	require.NoError(t, err)
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
-	router.GET("/admin/dashboard", m.Auth("admin"), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
+	app.Get("/admin/dashboard", m.Auth("admin"), func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
 	})
 
 	// 1. 普通用户携带有效令牌访问 admin 接口，被 AdminPolicy 拦截返回 403 Forbidden
 	req := httptest.NewRequest(http.MethodGet, "/admin/dashboard", nil)
 	req.Header.Set("Authorization", "Bearer "+clientSess.Token)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+	body, _ := io.ReadAll(resp.Body)
 	var errResp errs.Response
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &errResp))
+	require.NoError(t, json.Unmarshal(body, &errResp))
 	assert.Equal(t, string(errs.CodeForbidden), errResp.Code)
 
 	// 2. 管理员携带有效令牌访问 admin 接口，放行 200 OK
 	req = httptest.NewRequest(http.MethodGet, "/admin/dashboard", nil)
 	req.Header.Set("Authorization", "Bearer "+adminSess.Token)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	resp, err = app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 // TestAuth_RevocationEpoch 验证用户级注销纪元触发后，HTTP 网关即时拒绝已注销令牌。
@@ -287,32 +281,36 @@ func TestAuth_RevocationEpoch(t *testing.T) {
 	sess, err := clientGuard.Login(context.Background(), repo.users["usr_revoked"])
 	require.NoError(t, err)
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
-	router.GET("/client/profile", m.Auth("client"), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
+	app.Get("/client/profile", m.Auth("client"), func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
 	})
 
 	// 初始状态下有效
 	req := httptest.NewRequest(http.MethodGet, "/client/profile", nil)
 	req.Header.Set("Authorization", "Bearer "+sess.Token)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusOK, w.Code)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// 触发用户级全局作废（如密码重置或点击注销所有设备）
+	// 触发用户级全局作废
 	err = clientGuard.InvalidateAll(context.Background(), "usr_revoked")
 	require.NoError(t, err)
 
 	// 再次请求返回 401 撤销错误
 	req = httptest.NewRequest(http.MethodGet, "/client/profile", nil)
 	req.Header.Set("Authorization", "Bearer "+sess.Token)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	resp, err = app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	body, _ := io.ReadAll(resp.Body)
 	var errResp errs.Response
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &errResp))
+	require.NoError(t, json.Unmarshal(body, &errResp))
 	assert.Equal(t, string(errs.CodeAuthTokenRevoked), errResp.Code)
 }
 
@@ -320,37 +318,42 @@ func TestAuth_RevocationEpoch(t *testing.T) {
 func TestAuth_NilManagerFailsClosed(t *testing.T) {
 	m := middleware.New(middleware.Deps{})
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
-	router.GET("/protected", m.Auth(), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
+	app.Get("/protected", m.Auth(), func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 	req.Header.Set("Authorization", "Bearer some-token")
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 
 // TestCan_Unauthenticated 验证无认证身份访问受保护资源时返回 401。
 func TestCan_Unauthenticated(t *testing.T) {
 	m, _, _, _, _ := setupAuthEnv()
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
-	router.GET("/users", m.Can("users", "read"), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
+	app.Get("/users", m.Can("users", "read"), func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	body, _ := io.ReadAll(resp.Body)
 	var errResp errs.Response
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &errResp))
+	require.NoError(t, json.Unmarshal(body, &errResp))
 	assert.Equal(t, string(errs.CodeAuthTokenInvalid), errResp.Code)
 }
 
@@ -360,69 +363,76 @@ func TestCan_EnforcerNotConfigured(t *testing.T) {
 		Authz: nil,
 	})
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
-	router.GET("/users", func(c *gin.Context) {
-		ctx := authentication.With(c.Request.Context(), authentication.Identity{
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
+	app.Get("/users", func(c fiber.Ctx) error {
+		ctx := authentication.With(c.Context(), authentication.Identity{
 			UserID: "usr_admin_1",
 			Role:   "admin",
 		})
-		c.Request = c.Request.WithContext(ctx)
-		c.Next()
-	}, m.Can("users", "read"), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+		c.SetContext(ctx)
+		return c.Next()
+	}, m.Can("users", "read"), func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 
 // TestCan_RoleBasedAccess 验证基于 Casbin 角色策略的放行与拒绝。
 func TestCan_RoleBasedAccess(t *testing.T) {
 	m, _, _, _, _ := setupAuthEnv()
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
-	router.GET("/users", m.Can("users", "read"), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
+	app.Use(func(c fiber.Ctx) error {
+		if role := c.Get("X-Test-Role"); role != "" {
+			ctx := authentication.With(c.Context(), authentication.Identity{
+				UserID: "usr_test",
+				Role:   role,
+			})
+			c.SetContext(ctx)
+		}
+		return c.Next()
+	})
+	app.Get("/users", m.Can("users", "read"), func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
 	})
 
 	// 1. 普通用户角色无权读取 users 资源 -> 403 Forbidden
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
-	ctx := authentication.With(req.Context(), authentication.Identity{
-		UserID: "usr_user_1",
-		Role:   string(enum.RoleUser),
-	})
-	req = req.WithContext(ctx)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	req.Header.Set("X-Test-Role", string(enum.RoleUser))
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+	body, _ := io.ReadAll(resp.Body)
 	var errResp errs.Response
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &errResp))
+	require.NoError(t, json.Unmarshal(body, &errResp))
 	assert.Equal(t, string(errs.CodeForbidden), errResp.Code)
 
 	// 2. 管理员角色有权读取 users 资源 -> 200 OK
 	req = httptest.NewRequest(http.MethodGet, "/users", nil)
-	ctx = authentication.With(req.Context(), authentication.Identity{
-		UserID: "usr_admin_1",
-		Role:   string(enum.RoleAdmin),
-	})
-	req = req.WithContext(ctx)
-	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	req.Header.Set("X-Test-Role", string(enum.RoleAdmin))
+	resp, err = app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
-// TestAuth_MultiGuardFallback 验证 Laravel 风格多守卫回退匹配机制。
+// TestAuth_MultiGuardFallback 验证多守卫回退匹配机制。
 func TestAuth_MultiGuardFallback(t *testing.T) {
 	m, _, clientGuard, _, repo := setupAuthEnv()
 
-	// 注册普通用户
 	repo.users["usr_user_1"] = &sqlc.User{
 		ID:     "usr_user_1",
 		Status: enum.StatusActive,
@@ -432,48 +442,56 @@ func TestAuth_MultiGuardFallback(t *testing.T) {
 	clientSess, err := clientGuard.Login(context.Background(), repo.users["usr_user_1"])
 	require.NoError(t, err)
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
-	// 声明优先匹配 admin 守卫，回退至 client 守卫
-	router.GET("/hybrid", m.Auth("admin", "client"), func(c *gin.Context) {
-		id, ok := authentication.FromContext(c.Request.Context())
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
+	app.Get("/hybrid", m.Auth("admin", "client"), func(c fiber.Ctx) error {
+		id, ok := authentication.FromContext(c.Context())
 		if !ok {
-			c.Status(http.StatusUnauthorized)
-			return
+			return c.SendStatus(http.StatusUnauthorized)
 		}
-		c.JSON(http.StatusOK, gin.H{"userId": id.UserID})
+		return c.Status(http.StatusOK).JSON(fiber.Map{"userId": id.UserID})
 	})
 
-	// 携带 client 令牌请求，admin 守卫校验失败后自动回退至 client 守卫成功认证
 	req := httptest.NewRequest(http.MethodGet, "/hybrid", nil)
 	req.Header.Set("Authorization", "Bearer "+clientSess.Token)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	require.Equal(t, http.StatusOK, w.Code)
-	var resp map[string]string
-	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, "usr_user_1", resp["userId"])
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	body, _ := io.ReadAll(resp.Body)
+	var res map[string]string
+	require.NoError(t, json.Unmarshal(body, &res))
+	assert.Equal(t, "usr_user_1", res["userId"])
 }
 
-// TestCan_Permission 验证 Laravel 风格 m.Can 简写细粒度权限校验。
+// TestCan_Permission 验证 m.Can 简写细粒度权限校验。
 func TestCan_Permission(t *testing.T) {
 	m, _, _, _, _ := setupAuthEnv()
 
-	router := gin.New()
-	router.Use(global.New(global.Deps{}).ErrorHandler())
-	router.GET("/users", m.Can("users", "read"), func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	app := fiber.New(fiber.Config{
+		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
+	})
+	app.Use(func(c fiber.Ctx) error {
+		if role := c.Get("X-Test-Role"); role != "" {
+			ctx := authentication.With(c.Context(), authentication.Identity{
+				UserID: "usr_admin_1",
+				Role:   role,
+			})
+			c.SetContext(ctx)
+		}
+		return c.Next()
+	})
+	app.Get("/users", m.Can("users", "read"), func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
-	ctx := authentication.With(req.Context(), authentication.Identity{
-		UserID: "usr_admin_1",
-		Role:   string(enum.RoleAdmin),
-	})
-	req = req.WithContext(ctx)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	req.Header.Set("X-Test-Role", string(enum.RoleAdmin))
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }

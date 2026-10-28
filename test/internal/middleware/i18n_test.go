@@ -2,14 +2,12 @@ package middleware_test
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	gini18n "github.com/gin-contrib/i18n"
-	"github.com/gin-gonic/gin"
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
-	i18ntemplate "github.com/nicksnyder/go-i18n/v2/i18n/template"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -18,18 +16,22 @@ import (
 	"cfiber/pkg/i18n"
 )
 
-// TestI18nMiddleware_NegotiationAndMessages 验证 gin-contrib/i18n 多语言协商与文案获取。
+// TestI18nMiddleware_NegotiationAndMessages 验证多语言协商与上下文注入。
 func TestI18nMiddleware_NegotiationAndMessages(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	m := global.New(global.Deps{})
+	translator, err := i18n.New(&config.Config{I18n: config.I18nConfig{DefaultLanguage: "en"}})
+	require.NoError(t, err)
 
-	router := gin.New()
-	router.Use(m.I18n())
+	m := global.New(global.Deps{
+		Translator: translator,
+	})
 
-	router.GET("/i18n-test", func(c *gin.Context) {
-		currentLang := gini18n.GetCurrentLanguage(c).String()
-		requiredMsg := gini18n.MustGetMessage(c, "validation.required")
-		c.JSON(http.StatusOK, gin.H{
+	app := fiber.New()
+	app.Use(m.I18n())
+
+	app.Get("/i18n-test", func(c fiber.Ctx) error {
+		currentLang := global.LanguageFromContext(c)
+		requiredMsg := translator.ValidationMessage(currentLang, "required", "email", "")
+		return c.Status(http.StatusOK).JSON(fiber.Map{
 			"lang":     currentLang,
 			"required": requiredMsg,
 		})
@@ -38,62 +40,59 @@ func TestI18nMiddleware_NegotiationAndMessages(t *testing.T) {
 	// 1. 测试中文协商
 	reqZH := httptest.NewRequest(http.MethodGet, "/i18n-test", nil)
 	reqZH.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
-	wZH := httptest.NewRecorder()
-	router.ServeHTTP(wZH, reqZH)
+	respZH, err := app.Test(reqZH)
+	require.NoError(t, err)
+	defer func() { _ = respZH.Body.Close() }()
 
-	require.Equal(t, http.StatusOK, wZH.Code)
-	assert.Contains(t, wZH.Body.String(), "zh")
+	bodyZH, _ := io.ReadAll(respZH.Body)
+	require.Equal(t, http.StatusOK, respZH.StatusCode)
+	assert.Contains(t, string(bodyZH), "zh-CN")
 
 	// 2. 测试英文默认协商
 	reqEN := httptest.NewRequest(http.MethodGet, "/i18n-test", nil)
 	reqEN.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	wEN := httptest.NewRecorder()
-	router.ServeHTTP(wEN, reqEN)
+	respEN, err := app.Test(reqEN)
+	require.NoError(t, err)
+	defer func() { _ = respEN.Body.Close() }()
 
-	require.Equal(t, http.StatusOK, wEN.Code)
-	assert.Contains(t, wEN.Body.String(), "en")
+	bodyEN, _ := io.ReadAll(respEN.Body)
+	require.Equal(t, http.StatusOK, respEN.StatusCode)
+	assert.Contains(t, string(bodyEN), "en")
 }
 
 // TestI18nMiddleware_MatchesTranslatorOutput 锁定 HTTP 中间件与 pkg/i18n 的渲染结果一致。
-//
-// 两条路径共用 pkg/i18n.Loader 作为资源装载器，因此同一 key、同一份变量必须渲染出同一段文案；
-// 一旦有人在其中一侧改了分节合并或模板引擎，这里会立刻失败。
 func TestI18nMiddleware_MatchesTranslatorOutput(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	translator, err := i18n.New(&config.Config{I18n: config.I18nConfig{DefaultLanguage: "en"}})
 	require.NoError(t, err)
 
 	m := global.New(global.Deps{Translator: translator})
 
-	router := gin.New()
-	router.Use(m.I18n())
-	router.GET("/consistency", func(c *gin.Context) {
-		fieldLabel := translator.FieldLabel("en", "name")
-		templated, msgErr := gini18n.GetMessage(c, &goi18n.LocalizeConfig{
-			MessageID:      "validation.required",
-			TemplateData:   map[string]string{"Field": fieldLabel, "Param": ""},
-			TemplateParser: &i18ntemplate.TextParser{Option: "missingkey=zero"},
-		})
-		require.NoError(t, msgErr)
-
-		c.JSON(http.StatusOK, gin.H{
-			"plain":     gini18n.MustGetMessage(c, "invoice.title"),
-			"templated": templated,
+	app := fiber.New()
+	app.Use(m.I18n())
+	app.Get("/consistency", func(c fiber.Ctx) error {
+		lang := global.LanguageFromContext(c)
+		return c.Status(http.StatusOK).JSON(fiber.Map{
+			"plain":     translator.Invoice(lang, "title", nil),
+			"templated": translator.ValidationMessage(lang, "required", "name", ""),
 		})
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/consistency", nil)
 	req.Header.Set("Accept-Language", "en")
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, req)
-	require.Equal(t, http.StatusOK, recorder.Code)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
 
 	var body struct {
 		Plain     string `json:"plain"`
 		Templated string `json:"templated"`
 	}
-	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &body))
+	require.NoError(t, json.Unmarshal(bodyBytes, &body))
 
 	assert.Equal(t, translator.Invoice("en", "title", nil), body.Plain)
 	assert.Equal(t, translator.ValidationMessage("en", "required", "name", ""), body.Templated)

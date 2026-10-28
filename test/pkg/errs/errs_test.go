@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -16,8 +17,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/samber/oops"
@@ -433,22 +434,26 @@ func TestSanitizeMessage(t *testing.T) {
 
 // TestRender_Sanitization 验证 Render 执行时敏感信息被安全清洗。
 func TestRender_Sanitization(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	rec := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(rec)
-	c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+	app := fiber.New()
+	app.Get("/test", func(c fiber.Ctx) error {
+		err := errs.BadRequest("failed: select id from users where token=xyz")
+		return errs.Render(c, err)
+	})
 
-	// 触发带敏感信息的消息
-	err := errs.BadRequest("failed: select id from users where token=xyz")
-	errs.Render(c, err)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	var resp errs.Response
-	unmarshalErr := json.Unmarshal(rec.Body.Bytes(), &resp)
+	bodyBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	var errResp errs.Response
+	unmarshalErr := json.Unmarshal(bodyBytes, &errResp)
 	require.NoError(t, unmarshalErr)
-	assert.Equal(t, "An unexpected error occurred", resp.Message)
-
-	assert.Equal(t, string(errs.CodeBadRequest), resp.Code)
+	assert.Equal(t, "An unexpected error occurred", errResp.Message)
+	assert.Equal(t, string(errs.CodeBadRequest), errResp.Code)
 }
 
 // TestOopsFields 验证 oops 绑定的上下文能被自动解包为结构化字段，且敏感键值被安全脱敏。

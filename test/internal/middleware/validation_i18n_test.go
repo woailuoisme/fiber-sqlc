@@ -2,11 +2,12 @@ package middleware_test
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -20,8 +21,6 @@ import (
 // TestValidationMessageTranslation 验证以语言包键表达的字段级校验文案，
 // 会在渲染边界按 Accept-Language 翻译，而不是把英文提示硬编码在业务代码里。
 func TestValidationMessageTranslation(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
 	translator, err := i18n.New(&config.Config{I18n: config.I18nConfig{DefaultLanguage: "en"}})
 	require.NoError(t, err)
 
@@ -37,23 +36,28 @@ func TestValidationMessageTranslation(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			m := global.New(global.Deps{Translator: translator})
-			r := gin.New()
-			r.Use(m.ErrorHandler())
-			r.PATCH("/profile", func(c *gin.Context) {
-				_ = c.Error(appuser.FieldCannotBeNull("name"))
+			app := fiber.New(fiber.Config{
+				ErrorHandler: m.ErrorHandler(),
+			})
+			app.Patch("/profile", func(c fiber.Ctx) error {
+				return appuser.FieldCannotBeNull("name")
 			})
 
 			req := httptest.NewRequest(http.MethodPatch, "/profile", nil)
 			if tc.language != "" {
 				req.Header.Set("Accept-Language", tc.language)
 			}
-			w := httptest.NewRecorder()
-			r.ServeHTTP(w, req)
+			resp, err := app.Test(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
 
-			require.Equal(t, http.StatusUnprocessableEntity, w.Code, w.Body.String())
+			bodyBytes, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			require.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode, string(bodyBytes))
 
 			var body errs.Response
-			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
+			require.NoError(t, json.Unmarshal(bodyBytes, &body))
 			assert.Equal(t, string(errs.CodeValidationFailed), body.Code)
 			assert.Equal(t, []string{tc.want}, body.Errors["name"])
 		})

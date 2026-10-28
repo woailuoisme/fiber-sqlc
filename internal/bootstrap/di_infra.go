@@ -7,6 +7,8 @@ import (
 	"slices"
 
 	"github.com/dromara/carbon/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/storage/valkey"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
@@ -105,6 +107,14 @@ var InfraPackage = do.Package(
 	}),
 	do.Lazy(func(i do.Injector) (cache.Store, error) {
 		return do.MustInvoke[*cache.Client](i), nil
+	}),
+
+	// 5.1 Fiber Storage 驱动绑定（用于 Session、Idempotency 等官方中间件）
+	do.Lazy(func(i do.Injector) (fiber.Storage, error) {
+		cfg := do.MustInvoke[*config.Config](i)
+		return valkey.New(valkey.Config{
+			URL: cfg.Cache.URL,
+		}), nil
 	}),
 
 	// 6. 分布式锁管理器（优先从 cache.Store 提取 LockProvider，支持测试无缝切换）

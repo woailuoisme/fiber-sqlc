@@ -5,16 +5,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
+	"net"
 	"strconv"
 	"time"
 
-	"github.com/gin-contrib/graceful"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"golang.org/x/sync/errgroup"
+
+	"cfiber/pkg/logger"
 )
 
-// Serve 基于 gin-contrib/graceful 启动 HTTP 服务与后台路由器，阻塞直到平滑停机。
+// Serve 启动 Fiber HTTP 服务与后台路由器，阻塞直到平滑停机。
 //
 // 全部长生命周期 goroutine 由同一个 errgroup 托管：任一环节异常即取消其余环节，
 // Wait 返回后才释放数据库与缓存连接，停机顺序确定。
@@ -22,36 +23,27 @@ func (a *Application) Serve(ctx context.Context) error {
 	srvCfg := a.cfg.App.Server
 	shutdownTimeout := cmp.Or(srvCfg.ShutdownTimeout, 3*time.Second)
 
-	server := &http.Server{
-		Addr:              ":" + strconv.Itoa(a.cfg.App.Port),
-		Handler:           a.engine,
-		ReadHeaderTimeout: srvCfg.ReadHeaderTimeout,
-		ReadTimeout:       srvCfg.ReadTimeout,
-		WriteTimeout:      srvCfg.WriteTimeout,
-		IdleTimeout:       srvCfg.IdleTimeout,
-		MaxHeaderBytes:    srvCfg.MaxHeaderBytes,
-	}
-
-	g, err := graceful.New(
-		a.engine,
-		graceful.WithServer(server),
-		graceful.WithShutdownTimeout(shutdownTimeout),
-		graceful.WithBeforeShutdown(func(_ context.Context) error {
-			a.logger.Info().Msg("shutdown signal received, initiating graceful shutdown")
+	a.engine.Hooks().OnListen(func(data fiber.ListenData) error {
+		if fiber.IsChild() {
 			return nil
-		}),
-	)
-	if err != nil {
-		return fmt.Errorf("bootstrap graceful init failed: %w", err)
-	}
-	defer g.Close()
+		}
+		a.logStartup(data)
+		return nil
+	})
 
 	group, groupCtx := errgroup.WithContext(ctx)
 
 	group.Go(func() error {
-		a.logStartup(server)
-		if err := g.RunWithContext(groupCtx); err != nil && !errors.Is(err, context.Canceled) {
-			return fmt.Errorf("http server exited unexpectedly: %w", err)
+		addr := ":" + strconv.Itoa(a.cfg.App.Port)
+
+		listenConfig := fiber.ListenConfig{
+			DisableStartupMessage: true,
+			GracefulContext:       groupCtx,
+			ShutdownTimeout:       shutdownTimeout,
+		}
+
+		if err := a.engine.Listen(addr, listenConfig); err != nil && !errors.Is(err, context.Canceled) {
+			return fmt.Errorf("fiber server exited unexpectedly: %w", err)
 		}
 		return nil
 	})
@@ -72,22 +64,31 @@ func (a *Application) Serve(ctx context.Context) error {
 	return nil
 }
 
-// logStartup 输出启动横幅，便于从日志定位监听地址。
-func (a *Application) logStartup(server *http.Server) {
-	base := serverURL(a.cfg.App.Port)
-	event := a.logger.Info().
-		Str("addr", server.Addr).
+// logStartup 输出启动横幅，从 OnListen 钩子中读取实际绑定的主机、端口与 TLS 状态。
+func (a *Application) logStartup(data fiber.ListenData) {
+	scheme := "http"
+	if data.TLS {
+		scheme = "https"
+	}
+	host := data.Host
+	if host == "0.0.0.0" || host == "" || host == "[::1]" || host == "::" {
+		host = "localhost"
+	}
+	base := fmt.Sprintf("%s://%s:%s", scheme, host, data.Port)
+	addr := net.JoinHostPort(data.Host, data.Port)
+
+	log := a.logger
+	if log == nil {
+		log = logger.Default()
+	}
+
+	event := log.Info().
+		Str("addr", addr).
 		Str("url", base).
 		Str("env", a.cfg.App.Env).
-		Str("gin", gin.Mode()).
 		Str("storage", a.cfg.Storage.Driver)
 	if a.cfg.App.EnableDocs {
 		event = event.Str("docs", base+docsPagePath)
 	}
 	event.Msg("HTTP server started and listening")
-}
-
-// serverURL 构造本地服务访问 URL。
-func serverURL(port int) string {
-	return "http://localhost:" + strconv.Itoa(port)
 }

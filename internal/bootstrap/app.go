@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
@@ -18,12 +18,12 @@ type Application struct {
 	cfg      *config.Config
 	logger   *zerolog.Logger
 	eventbus *eventbus.Manager
-	engine   *gin.Engine
+	engine   *fiber.App
 	injector *do.RootScope
 }
 
 // Engine 暴露已装配的路由引擎，供集成测试直接驱动请求。
-func (a *Application) Engine() *gin.Engine { return a.engine }
+func (a *Application) Engine() *fiber.App { return a.engine }
 
 // Injector 暴露根依赖注入容器，供集成测试克隆或内省。
 func (a *Application) Injector() *do.RootScope { return a.injector }

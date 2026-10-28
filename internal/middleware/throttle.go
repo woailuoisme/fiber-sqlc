@@ -1,14 +1,16 @@
 package middleware
 
 import (
+	"cmp"
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/limiter"
 
 	"cfiber/pkg/authentication"
-	"cfiber/pkg/cache"
 	"cfiber/pkg/errs"
 	"cfiber/pkg/logger"
 )
@@ -31,13 +33,13 @@ const (
 type ThrottleOption func(*throttleOptions)
 
 type throttleOptions struct {
-	keyFunc  func(c *gin.Context) string
+	keyFunc  func(c fiber.Ctx) string
 	tier     Tier
-	response func(c *gin.Context)
+	response func(c fiber.Ctx) error
 }
 
 // WithThrottleKey 自定义限流区分维度（例如按指定 header 或复合 key）。
-func WithThrottleKey(fn func(c *gin.Context) string) ThrottleOption {
+func WithThrottleKey(fn func(c fiber.Ctx) string) ThrottleOption {
 	return func(o *throttleOptions) {
 		o.keyFunc = fn
 	}
@@ -51,56 +53,54 @@ func WithThrottleTier(tier Tier) ThrottleOption {
 }
 
 // WithThrottleResponse 指定自定义限流触发时的响应拦截回调。
-func WithThrottleResponse(fn func(c *gin.Context)) ThrottleOption {
+func WithThrottleResponse(fn func(c fiber.Ctx) error) ThrottleOption {
 	return func(o *throttleOptions) {
 		o.response = fn
 	}
 }
 
-// RateLimiterStore 定义限流中间件所需的缓存原语接口。
-// pkg/cache.Client 天然满足该接口。
-type RateLimiterStore interface {
-	Increment(ctx context.Context, key string, ttl time.Duration) (int64, error)
-	Get(ctx context.Context, key string) (string, error)
-}
-
-// Throttle 按档位预设配额执行平滑滑动窗口限流（分布式配额见 pkg/cache）。
-// 官方无限流中间件，属项目自建。
-func (m *Middleware) Throttle(tier Tier, opts ...ThrottleOption) gin.HandlerFunc {
+// Throttle 按档位预设配额执行平滑滑动窗口限流。
+func (m *Middleware) Throttle(tier Tier, opts ...ThrottleOption) fiber.Handler {
 	if m != nil && !m.limiter.IsEnabled() {
 		return passthrough()
 	}
 
 	opts = append([]ThrottleOption{WithThrottleTier(tier)}, opts...)
-	return ThrottleWithStore(m.resolveLimiterStore(), m.limitFor(tier), rateLimitWindow, opts...)
+	return ThrottleWithStorage(m.resolveLimiterStorage(), m.limitFor(tier), rateLimitWindow, opts...)
 }
 
 // ThrottleRate 按显式配额与时间周期执行平滑滑动窗口限流。
-func (m *Middleware) ThrottleRate(limit int, window time.Duration, opts ...ThrottleOption) gin.HandlerFunc {
+func (m *Middleware) ThrottleRate(limit int, window time.Duration, opts ...ThrottleOption) fiber.Handler {
 	if m != nil && !m.limiter.IsEnabled() {
 		return passthrough()
 	}
-	return ThrottleWithStore(m.resolveLimiterStore(), limit, window, opts...)
+	return ThrottleWithStorage(m.resolveLimiterStorage(), limit, window, opts...)
 }
 
 // passthrough 返回不做任何限流的空中间件。
-func passthrough() gin.HandlerFunc {
-	return func(c *gin.Context) { c.Next() }
+func passthrough() fiber.Handler {
+	return func(c fiber.Ctx) error { return c.Next() }
 }
 
-// resolveLimiterStore 优先使用显式注入的存储，其次复用平台缓存。
-func (m *Middleware) resolveLimiterStore() RateLimiterStore {
+// resolveLimiterStorage 优先使用显式注入的存储，其次是默认 fiber.Storage。
+func (m *Middleware) resolveLimiterStorage() fiber.Storage {
 	if m == nil {
 		return nil
 	}
-	if m.limiterStore != nil {
-		return m.limiterStore
-	}
-	return m.cache
+	return m.storage
 }
 
-// ThrottleWithStore 构造独立的平滑滑动窗口限流中间件实例，方便测试与自定义注入。
-func ThrottleWithStore(store RateLimiterStore, limit int, window time.Duration, opts ...ThrottleOption) gin.HandlerFunc {
+// ThrottleWithStore 为测试与向后兼容保留的别名。
+func ThrottleWithStore(storage fiber.Storage, limit int, window time.Duration, opts ...ThrottleOption) fiber.Handler {
+	return ThrottleWithStorage(storage, limit, window, opts...)
+}
+
+// ThrottleWithStorage 基于 Fiber v3 官方 limiter.SlidingWindow 构造平滑滑动窗口限流中间件。
+func ThrottleWithStorage(storage fiber.Storage, limit int, window time.Duration, opts ...ThrottleOption) fiber.Handler {
+	if limit <= 0 {
+		return passthrough()
+	}
+
 	var options throttleOptions
 	for _, opt := range opts {
 		opt(&options)
@@ -109,54 +109,51 @@ func ThrottleWithStore(store RateLimiterStore, limit int, window time.Duration, 
 		window = rateLimitWindow
 	}
 
-	return func(c *gin.Context) {
-		if limit <= 0 || store == nil {
-			c.Next()
-			return
-		}
+	tierName := throttleTierLabel(options.tier)
 
-		now := time.Now().UTC()
-		windowSeconds := max(int64(window.Seconds()), 1)
-		bucket := now.Unix() / windowSeconds
-		offset := now.Unix() % windowSeconds
-		resetAt := (bucket + 1) * windowSeconds
+	var effectiveStorage fiber.Storage
+	if storage != nil {
+		effectiveStorage = failOpenStorage{storage: storage}
+	}
 
-		scope := resolveThrottleScope(c, options)
-		tierName := throttleTierLabel(options.tier)
+	cfg := limiter.Config{
+		Max:               limit,
+		Expiration:        window,
+		Storage:           effectiveStorage,
+		LimiterMiddleware: limiter.SlidingWindow{},
+		KeyGenerator: func(c fiber.Ctx) string {
+			scope := resolveThrottleScope(c, options)
+			return "ratelimit:" + tierName + ":" + scope
+		},
+		LimitReached: func(c fiber.Ctx) error {
+			scope := resolveThrottleScope(c, options)
+			c.Set("X-RateLimit-Limit", strconv.Itoa(limit))
+			c.Set("X-RateLimit-Remaining", "0")
+			if reset := c.GetRespHeader(fiber.HeaderRetryAfter); reset != "" {
+				c.Set("X-RateLimit-Reset", reset)
+			}
 
-		currCount, err := store.Increment(c.Request.Context(), rateLimitKey(tierName, scope, windowSeconds, bucket), 2*window)
-		if err != nil {
-			// 计数器故障降级放行，避免限流器拖垮业务。
-			logger.FromContext(c.Request.Context()).Error().Err(err).Msg("throttle counter failed, request allowed")
-			c.Next()
-			return
-		}
-
-		// 加权前一窗口余量，消除窗口临界处的双倍突发。
-		prevCount := previousWindowCount(c, store, rateLimitKey(tierName, scope, windowSeconds, bucket-1))
-		weight := float64(windowSeconds-offset) / float64(windowSeconds)
-		estimatedCount := currCount + int64(float64(prevCount)*weight)
-
-		if estimatedCount > int64(limit) {
-			writeExceededHeaders(c, limit, resetAt, now.Unix())
-			logRateLimitExceeded(c, tierName, scope, limit, windowSeconds, currCount, estimatedCount)
+			logger.FromContext(c.Context()).Warn().
+				Str("tier", tierName).
+				Str("scope", scope).
+				Int("limit", limit).
+				Str("path", c.Path()).
+				Str("method", c.Method()).
+				Str("ip", c.IP()).
+				Msg("rate limit exceeded")
 
 			if options.response != nil {
-				options.response(c)
-			} else {
-				abortWithError(c, errs.RateLimited("Too many requests"))
+				return options.response(c)
 			}
-			c.Abort()
-			return
-		}
-
-		writeLimitHeaders(c, limit, int64(limit)-estimatedCount, resetAt)
-		c.Next()
+			return errs.RateLimited("Too many requests")
+		},
 	}
+
+	return limiter.New(cfg)
 }
 
 // resolveThrottleScope 解析限流区分维度：自定义键优先，其次业务档位，最后默认维度。
-func resolveThrottleScope(c *gin.Context, options throttleOptions) string {
+func resolveThrottleScope(c fiber.Ctx, options throttleOptions) string {
 	switch {
 	case options.keyFunc != nil:
 		return options.keyFunc(c)
@@ -175,48 +172,76 @@ func throttleTierLabel(tier Tier) string {
 	return string(tier)
 }
 
-// rateLimitKey 组装固定维度的限流计数器键。
-func rateLimitKey(tier, scope string, windowSeconds, bucket int64) string {
-	return cache.Key("ratelimit", tier, scope,
-		strconv.FormatInt(windowSeconds, 10), strconv.FormatInt(bucket, 10))
-}
-
-// previousWindowCount 读取前一窗口的计数；缺失或解析失败时按 0 处理。
-func previousWindowCount(c *gin.Context, store RateLimiterStore, key string) int64 {
-	value, err := store.Get(c.Request.Context(), key)
-	if err != nil {
-		return 0
+// scopeKey 根据档位语义决定隔离维度。
+func scopeKey(tier Tier, c fiber.Ctx) string {
+	switch tier {
+	case TierAuthenticated:
+		if identity, ok := authentication.FromContext(c.Context()); ok && identity.UserID != "" {
+			return "user:" + identity.UserID
+		}
+		return defaultScopeKey(c)
+	case TierAnonymous, TierSensitive:
+		return defaultScopeKey(c)
+	default:
+		return defaultScopeKey(c)
 	}
-	count, _ := strconv.ParseInt(value, 10, 64)
-	return count
 }
 
-// writeLimitHeaders 写入未超限时的配额响应头。
-func writeLimitHeaders(c *gin.Context, limit int, remaining, resetAt int64) {
-	c.Header("X-RateLimit-Limit", strconv.Itoa(limit))
-	c.Header("X-RateLimit-Remaining", strconv.FormatInt(max(remaining, 0), 10))
-	c.Header("X-RateLimit-Reset", strconv.FormatInt(resetAt, 10))
+// failOpenStorage 对底层存储的异常进行兜底，确保缓存或网络抖动时不阻塞正常请求。
+type failOpenStorage struct {
+	storage fiber.Storage
 }
 
-// writeExceededHeaders 写入超限时的配额与重试响应头。
-func writeExceededHeaders(c *gin.Context, limit int, resetAt, now int64) {
-	writeLimitHeaders(c, limit, 0, resetAt)
-	c.Header("Retry-After", strconv.FormatInt(max(resetAt-now, 1), 10))
+func (s failOpenStorage) Get(key string) ([]byte, error) {
+	val, err := s.storage.Get(key)
+	if err != nil {
+		return nil, nil //nolint:nilerr // fail-open on storage error to avoid dropping traffic
+	}
+	return val, nil
 }
 
-// logRateLimitExceeded 记录限流拒绝的结构化审计日志。
-func logRateLimitExceeded(c *gin.Context, tier, scope string, limit int, windowSeconds, currentCount, estimatedCount int64) {
-	logger.FromContext(c.Request.Context()).Warn().
-		Str("tier", tier).
-		Str("scope", scope).
-		Int("limit", limit).
-		Int64("window_seconds", windowSeconds).
-		Int64("current_count", currentCount).
-		Int64("estimated_count", estimatedCount).
-		Str("path", c.Request.URL.Path).
-		Str("method", c.Request.Method).
-		Str("ip", c.ClientIP()).
-		Msg("rate limit exceeded")
+func (s failOpenStorage) GetWithContext(ctx context.Context, key string) ([]byte, error) {
+	val, err := s.storage.GetWithContext(ctx, key)
+	if err != nil {
+		return nil, nil //nolint:nilerr // fail-open on storage error to avoid dropping traffic
+	}
+	return val, nil
+}
+
+func (s failOpenStorage) Set(key string, val []byte, exp time.Duration) error {
+	_ = s.storage.Set(key, val, exp)
+	return nil
+}
+
+func (s failOpenStorage) SetWithContext(ctx context.Context, key string, val []byte, exp time.Duration) error {
+	_ = s.storage.SetWithContext(ctx, key, val, exp)
+	return nil
+}
+
+func (s failOpenStorage) Delete(key string) error {
+	return s.storage.Delete(key)
+}
+
+func (s failOpenStorage) DeleteWithContext(ctx context.Context, key string) error {
+	return s.storage.DeleteWithContext(ctx, key)
+}
+
+func (s failOpenStorage) Reset() error {
+	return s.storage.Reset()
+}
+
+func (s failOpenStorage) ResetWithContext(ctx context.Context) error {
+	return s.storage.ResetWithContext(ctx)
+}
+
+func (s failOpenStorage) Close() error {
+	return s.storage.Close()
+}
+
+// defaultScopeKey 默认按客户端真实 IP 隔离。
+func defaultScopeKey(c fiber.Ctx) string {
+	ip := strings.TrimSpace(c.IP())
+	return "ip:" + cmp.Or(ip, "unknown")
 }
 
 // limitFor 按档位读取配额，未知档位回退至未认证配额。
@@ -229,20 +254,4 @@ func (m *Middleware) limitFor(tier Tier) int {
 	default:
 		return m.limiter.Anonymous
 	}
-}
-
-// defaultScopeKey 默认限流维度：优先使用已认证用户 ID，未认证时回退为客户端 IP。
-func defaultScopeKey(c *gin.Context) string {
-	if id, ok := authentication.FromContext(c.Request.Context()); ok && id.UserID != "" {
-		return "user:" + id.UserID
-	}
-	return "ip:" + c.ClientIP()
-}
-
-// scopeKey 确定特定档位的限流维度：TierAuthenticated 优先使用 UserID，其余均使用客户端 IP。
-func scopeKey(tier Tier, c *gin.Context) string {
-	if tier == TierAuthenticated {
-		return defaultScopeKey(c)
-	}
-	return "ip:" + c.ClientIP()
 }

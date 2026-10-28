@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
@@ -12,6 +12,7 @@ import (
 	"cfiber/internal/middleware/global"
 	"cfiber/internal/service"
 	adminservice "cfiber/internal/service/admin"
+	"cfiber/pkg/validator"
 )
 
 // HandlersPackage 声明 HTTP 传输适配层（各模块 Handler、路由表与 Gin 路由引擎）。
@@ -72,13 +73,14 @@ var HandlersPackage = do.Package(
 		}, nil
 	}),
 
-	// 9. Gin HTTP 引擎与洋葱中间件管线
-	do.Lazy(func(i do.Injector) (*gin.Engine, error) {
+	// 9. Fiber HTTP 引擎与洋葱中间件管线
+	do.Lazy(func(i do.Injector) (*fiber.App, error) {
 		cfg := do.MustInvoke[*config.Config](i)
 		globalMW := do.MustInvoke[*global.Middleware](i)
 		routeMW := do.MustInvoke[*middleware.Middleware](i)
 		handlers := do.MustInvoke[routeHandlers](i)
+		val := do.MustInvoke[*validator.Validator](i)
 
-		return buildEngine(cfg, globalMW, routeMW, handlers)
+		return buildEngine(cfg, globalMW, routeMW, handlers, val)
 	}),
 )

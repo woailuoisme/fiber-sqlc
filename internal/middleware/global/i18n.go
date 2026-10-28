@@ -1,36 +1,35 @@
 package global
 
 import (
-	gini18n "github.com/gin-contrib/i18n"
-	"github.com/gin-gonic/gin"
-	"github.com/pelletier/go-toml/v2"
-	"golang.org/x/text/language"
+	"strings"
 
-	"cfiber/message"
-	"cfiber/pkg/i18n"
+	"github.com/gofiber/fiber/v3"
 )
 
-// I18n 【全局中间件】基于 gin-contrib/i18n 统一提供多语言嗅探、语言协商与上下文注入。
-//
-// 语言资源的分节合并由 pkg/i18n.Loader 统一提供，HTTP 层与 Translator 不再各写一份。
-func (m *Middleware) I18n() gin.HandlerFunc {
-	defaultTag := language.English
-	if m.translator != nil && (m.translator.Fallback() == "zh-CN" || m.translator.Fallback() == "zh") {
-		defaultTag = language.MustParse("zh-CN")
-	}
+// LanguageContextKey 是上下文中保存协商后语言标识的键。
+const LanguageContextKey = "language"
 
-	return gini18n.Localize(
-		gini18n.WithBundle(&gini18n.BundleCfg{
-			RootPath:         "message",
-			FormatBundleFile: "toml",
-			AcceptLanguage: []language.Tag{
-				language.English,
-				language.MustParse("zh-CN"),
-				language.Chinese,
-			},
-			DefaultLanguage: defaultTag,
-			UnmarshalFunc:   toml.Unmarshal,
-			Loader:          i18n.Loader{FS: message.FS},
-		}),
-	)
+// I18n 【全局中间件】统一提供多语言嗅探、语言协商与上下文注入。
+func (m *Middleware) I18n() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		acceptLanguage := strings.TrimSpace(c.Get(fiber.HeaderAcceptLanguage))
+		lang := ""
+		if m.translator != nil {
+			lang = m.translator.Language(acceptLanguage)
+		}
+		if lang == "" {
+			lang = "en"
+		}
+
+		fiber.Locals(c, LanguageContextKey, lang)
+		return c.Next()
+	}
+}
+
+// LanguageFromContext 从 Fiber 上下文提取已协商语言标识。
+func LanguageFromContext(c fiber.Ctx) string {
+	if c == nil {
+		return ""
+	}
+	return fiber.Locals[string](c, LanguageContextKey)
 }

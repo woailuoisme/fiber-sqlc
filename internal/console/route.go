@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -74,7 +76,7 @@ func (o *RouteListOptions) Run(_ context.Context) error {
 		return fmt.Errorf("failed to inspect engine routes: %w", err)
 	}
 
-	rawRoutes := engine.Routes()
+	rawRoutes := engine.GetRoutes(true)
 	routes := make([]RouteEntry, 0, len(rawRoutes))
 	for _, r := range rawRoutes {
 		if o.MethodFilter != "" && !strings.EqualFold(r.Method, o.MethodFilter) {
@@ -84,14 +86,30 @@ func (o *RouteListOptions) Run(_ context.Context) error {
 			continue
 		}
 
+		handlerName := r.Name
+		if handlerName == "" && len(r.Handlers) > 0 {
+			fn := r.Handlers[len(r.Handlers)-1]
+			if f := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()); f != nil {
+				handlerName = f.Name()
+			}
+		}
+		if handlerName == "" {
+			handlerName = r.Method + " " + r.Path
+		}
+
 		routes = append(routes, RouteEntry{
 			Method:     r.Method,
 			Path:       r.Path,
-			Handler:    formatHandlerName(r.Handler),
-			RawHandler: r.Handler,
+			Handler:    formatHandlerName(handlerName),
+			RawHandler: handlerName,
 		})
 	}
 
+	o.sortRoutes(routes)
+	return o.renderOutput(streams, routes)
+}
+
+func (o *RouteListOptions) sortRoutes(routes []RouteEntry) {
 	slices.SortFunc(routes, func(a, b RouteEntry) int {
 		var res int
 		switch strings.ToLower(o.SortField) {
@@ -107,7 +125,9 @@ func (o *RouteListOptions) Run(_ context.Context) error {
 		}
 		return res
 	})
+}
 
+func (o *RouteListOptions) renderOutput(streams *core.IOStreams, routes []RouteEntry) error {
 	if o.JSONOutput {
 		data, err := json.MarshalIndent(routes, "", "  ")
 		if err != nil {

@@ -2,7 +2,8 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/utils/v2"
 
 	"cfiber/internal/dto"
 	"cfiber/internal/service"
@@ -33,19 +34,17 @@ func NewAuthHandler(svc *service.AuthService) *AuthHandler {
 // @Success      201 {object} dto.SessionResource "注册成功并已登录"
 // @x-order      1
 // @Router       /auth/sign-up/email [post]
-func (h *AuthHandler) SignUpEmail(c *gin.Context) {
+func (h *AuthHandler) SignUpEmail(c fiber.Ctx) error {
 	var body dto.SignUpEmailBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	session, err := h.svc.SignUpEmail(c.Request.Context(), body)
+	session, err := h.svc.SignUpEmail(c.Context(), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.Created(c, session)
+	return response.Created(c, session)
 }
 
 // SignInEmail 处理 POST /v1/auth/sign-in/email。
@@ -59,19 +58,17 @@ func (h *AuthHandler) SignUpEmail(c *gin.Context) {
 // @Success      200 {object} dto.SessionResource "登录成功"
 // @x-order      2
 // @Router       /auth/sign-in/email [post]
-func (h *AuthHandler) SignInEmail(c *gin.Context) {
+func (h *AuthHandler) SignInEmail(c fiber.Ctx) error {
 	var body dto.SignInEmailBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	session, err := h.svc.SignInEmail(c.Request.Context(), body)
+	session, err := h.svc.SignInEmail(c.Context(), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, session)
+	return response.OK(c, session)
 }
 
 // SignInUsername 处理 POST /v1/auth/sign-in/username。
@@ -85,19 +82,17 @@ func (h *AuthHandler) SignInEmail(c *gin.Context) {
 // @Success      200 {object} dto.SessionResource "登录成功"
 // @x-order      3
 // @Router       /auth/sign-in/username [post]
-func (h *AuthHandler) SignInUsername(c *gin.Context) {
+func (h *AuthHandler) SignInUsername(c fiber.Ctx) error {
 	var body dto.SignInUsernameBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	session, err := h.svc.SignInUsername(c.Request.Context(), body)
+	session, err := h.svc.SignInUsername(c.Context(), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, session)
+	return response.OK(c, session)
 }
 
 // SignOut 处理 POST /v1/auth/sign-out。请求体可省略。
@@ -113,23 +108,20 @@ func (h *AuthHandler) SignInUsername(c *gin.Context) {
 // @Success      204 "已登出，无响应体"
 // @x-order      6
 // @Router       /auth/sign-out [post]
-func (h *AuthHandler) SignOut(c *gin.Context) {
-	if _, err := authentication.RequireIdentity(c.Request.Context()); err != nil {
-		_ = c.Error(err)
-		return
+func (h *AuthHandler) SignOut(c fiber.Ctx) error {
+	if _, err := authentication.RequireIdentity(c.Context()); err != nil {
+		return err
 	}
 
 	var body dto.SignOutBody
 	if err := validator.BindOptionalJSON(c, &body); err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 
-	if err := h.svc.SignOut(c.Request.Context(), body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := h.svc.SignOut(c.Context(), body); err != nil {
+		return err
 	}
-	response.NoContent(c)
+	return response.NoContent(c)
 }
 
 // GetSession 处理 GET /v1/auth/get-session。
@@ -142,19 +134,17 @@ func (h *AuthHandler) SignOut(c *gin.Context) {
 // @Success      200 {object} dto.GetSessionResource "当前登录用户"
 // @x-order      4
 // @Router       /auth/get-session [get]
-func (h *AuthHandler) GetSession(c *gin.Context) {
-	identity, err := authentication.RequireIdentity(c.Request.Context())
+func (h *AuthHandler) GetSession(c fiber.Ctx) error {
+	identity, err := authentication.RequireIdentity(c.Context())
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 
-	session, err := h.svc.GetSession(c.Request.Context(), identity.UserID)
+	session, err := h.svc.GetSession(c.Context(), identity.UserID)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, session)
+	return response.OK(c, session)
 }
 
 // Refresh 处理 POST /v1/auth/token/refresh。
@@ -170,19 +160,17 @@ func (h *AuthHandler) GetSession(c *gin.Context) {
 // @Success      200 {object} dto.SessionResource "新的一对令牌"
 // @x-order      5
 // @Router       /auth/token/refresh [post]
-func (h *AuthHandler) Refresh(c *gin.Context) {
+func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 	var body dto.RefreshTokenBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	session, err := h.svc.Refresh(c.Request.Context(), body)
+	session, err := h.svc.Refresh(c.Context(), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, session)
+	return response.OK(c, session)
 }
 
 // ChangePassword 处理 POST /v1/auth/change-password。
@@ -197,24 +185,21 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 // @Success      204 "修改成功，无响应体"
 // @x-order      9
 // @Router       /auth/change-password [post]
-func (h *AuthHandler) ChangePassword(c *gin.Context) {
-	identity, err := authentication.RequireIdentity(c.Request.Context())
+func (h *AuthHandler) ChangePassword(c fiber.Ctx) error {
+	identity, err := authentication.RequireIdentity(c.Context())
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 
 	var body dto.ChangePasswordBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	if err := h.svc.ChangePassword(c.Request.Context(), identity.UserID, body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := h.svc.ChangePassword(c.Context(), identity.UserID, body); err != nil {
+		return err
 	}
-	response.NoContent(c)
+	return response.NoContent(c)
 }
 
 // ForgetPassword 处理 POST /v1/auth/forget-password，投递重置链接。
@@ -230,19 +215,17 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 // @Success      200 {object} dto.StatusResource "已受理（邮箱不存在时也返回此结果）"
 // @x-order      10
 // @Router       /auth/forget-password [post]
-func (h *AuthHandler) ForgetPassword(c *gin.Context) {
+func (h *AuthHandler) ForgetPassword(c fiber.Ctx) error {
 	var body dto.ForgetPasswordBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	result, err := h.svc.ForgetPassword(c.Request.Context(), c.GetHeader("Accept-Language"), body)
+	result, err := h.svc.ForgetPassword(c.Context(), utils.CopyString(c.Get(fiber.HeaderAcceptLanguage)), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, result)
+	return response.OK(c, result)
 }
 
 // RequestPasswordReset 处理 POST /v1/auth/request-password-reset，投递重置验证码。
@@ -257,19 +240,17 @@ func (h *AuthHandler) ForgetPassword(c *gin.Context) {
 // @Success      200 {object} dto.StatusResource "已受理（邮箱不存在时也返回此结果）"
 // @x-order      11
 // @Router       /auth/request-password-reset [post]
-func (h *AuthHandler) RequestPasswordReset(c *gin.Context) {
+func (h *AuthHandler) RequestPasswordReset(c fiber.Ctx) error {
 	var body dto.RequestPasswordResetBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	result, err := h.svc.RequestPasswordReset(c.Request.Context(), c.GetHeader("Accept-Language"), body)
+	result, err := h.svc.RequestPasswordReset(c.Context(), utils.CopyString(c.Get(fiber.HeaderAcceptLanguage)), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, result)
+	return response.OK(c, result)
 }
 
 // ResetPassword 处理 POST /v1/auth/reset-password。
@@ -284,21 +265,19 @@ func (h *AuthHandler) RequestPasswordReset(c *gin.Context) {
 // @Success      204 {string} string "口令已重置"
 // @x-order      12
 // @Router       /auth/reset-password [post]
-func (h *AuthHandler) ResetPassword(c *gin.Context) {
+func (h *AuthHandler) ResetPassword(c fiber.Ctx) error {
 	var body dto.ResetPasswordBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	if _, err := h.svc.ResetPassword(c.Request.Context(), body); err != nil {
-		_ = c.Error(err)
-		return
+	if _, err := h.svc.ResetPassword(c.Context(), body); err != nil {
+		return err
 	}
 
 	// api.md §5.1.4 规定重置口令返回 204：没有需要回传的业务数据，
 	// 空响应体也让"重置成功"不附带任何可被误用的信息。
-	response.NoContent(c)
+	return response.NoContent(c)
 }
 
 // SendVerificationOTP 处理 POST /v1/auth/send-verification-otp。
@@ -314,19 +293,17 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 // @Success      200 {object} dto.StatusResource "已受理（邮箱不存在或已验证时也返回此结果）"
 // @x-order      7
 // @Router       /auth/send-verification-otp [post]
-func (h *AuthHandler) SendVerificationOTP(c *gin.Context) {
+func (h *AuthHandler) SendVerificationOTP(c fiber.Ctx) error {
 	var body dto.SendVerificationOTPBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	result, err := h.svc.SendVerificationOTP(c.Request.Context(), c.GetHeader("Accept-Language"), body)
+	result, err := h.svc.SendVerificationOTP(c.Context(), utils.CopyString(c.Get(fiber.HeaderAcceptLanguage)), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, result)
+	return response.OK(c, result)
 }
 
 // VerifyEmail 处理 POST /v1/auth/verify-email。
@@ -340,17 +317,15 @@ func (h *AuthHandler) SendVerificationOTP(c *gin.Context) {
 // @Success      200 {object} dto.StatusResource "验证通过"
 // @x-order      8
 // @Router       /auth/verify-email [post]
-func (h *AuthHandler) VerifyEmail(c *gin.Context) {
+func (h *AuthHandler) VerifyEmail(c fiber.Ctx) error {
 	var body dto.VerifyEmailBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	result, err := h.svc.VerifyEmail(c.Request.Context(), body)
+	result, err := h.svc.VerifyEmail(c.Context(), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, result)
+	return response.OK(c, result)
 }

@@ -4,7 +4,7 @@
 package adminhandler
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 
 	admindto "cfiber/internal/dto/admin"
 	adminservice "cfiber/internal/service/admin"
@@ -34,19 +34,17 @@ func NewAuthHandler(svc *adminservice.AuthService) *AuthHandler {
 // @Success      200 {object} admindto.SessionResource "登录成功并颁发管理端双令牌"
 // @x-order      1
 // @Router       /admin/auth/sign-in/email [post]
-func (h *AuthHandler) SignInEmail(c *gin.Context) {
+func (h *AuthHandler) SignInEmail(c fiber.Ctx) error {
 	var body admindto.SignInEmailBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	session, err := h.svc.SignInEmail(c.Request.Context(), body)
+	session, err := h.svc.SignInEmail(c.Context(), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, session)
+	return response.OK(c, session)
 }
 
 // GetSession 处理 GET /v1/admin/auth/get-session。
@@ -60,19 +58,17 @@ func (h *AuthHandler) SignInEmail(c *gin.Context) {
 // @Success      200 {object} admindto.GetSessionResource "当前管理员会话档案"
 // @x-order      2
 // @Router       /admin/auth/get-session [get]
-func (h *AuthHandler) GetSession(c *gin.Context) {
-	id, err := authentication.RequireIdentity(c.Request.Context())
+func (h *AuthHandler) GetSession(c fiber.Ctx) error {
+	id, err := authentication.RequireIdentity(c.Context())
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 
-	res, err := h.svc.GetSession(c.Request.Context(), id.UserID)
+	res, err := h.svc.GetSession(c.Context(), id.UserID)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, res)
+	return response.OK(c, res)
 }
 
 // Refresh 处理 POST /v1/admin/auth/token/refresh。
@@ -86,19 +82,17 @@ func (h *AuthHandler) GetSession(c *gin.Context) {
 // @Success      200 {object} admindto.SessionResource "刷新成功并颁发新双令牌"
 // @x-order      3
 // @Router       /admin/auth/token/refresh [post]
-func (h *AuthHandler) Refresh(c *gin.Context) {
+func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 	var body admindto.RefreshTokenBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	session, err := h.svc.Refresh(c.Request.Context(), body)
+	session, err := h.svc.Refresh(c.Context(), body)
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
-	response.OK(c, session)
+	return response.OK(c, session)
 }
 
 // SignOut 处理 POST /v1/admin/auth/sign-out。
@@ -113,23 +107,20 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 // @Success      204 "已登出，无响应体"
 // @x-order      4
 // @Router       /admin/auth/sign-out [post]
-func (h *AuthHandler) SignOut(c *gin.Context) {
-	if _, err := authentication.RequireIdentity(c.Request.Context()); err != nil {
-		_ = c.Error(err)
-		return
+func (h *AuthHandler) SignOut(c fiber.Ctx) error {
+	if _, err := authentication.RequireIdentity(c.Context()); err != nil {
+		return err
 	}
 
 	var body admindto.SignOutBody
 	if err := validator.BindOptionalJSON(c, &body); err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 
-	if err := h.svc.SignOut(c.Request.Context(), body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := h.svc.SignOut(c.Context(), body); err != nil {
+		return err
 	}
-	response.NoContent(c)
+	return response.NoContent(c)
 }
 
 // ChangePassword 处理 POST /v1/admin/auth/change-password。
@@ -144,22 +135,19 @@ func (h *AuthHandler) SignOut(c *gin.Context) {
 // @Success      204 "修改成功，无响应体"
 // @x-order      5
 // @Router       /admin/auth/change-password [post]
-func (h *AuthHandler) ChangePassword(c *gin.Context) {
-	id, err := authentication.RequireIdentity(c.Request.Context())
+func (h *AuthHandler) ChangePassword(c fiber.Ctx) error {
+	id, err := authentication.RequireIdentity(c.Context())
 	if err != nil {
-		_ = c.Error(err)
-		return
+		return err
 	}
 
 	var body admindto.ChangePasswordBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := c.Bind().JSON(&body); err != nil {
+		return err
 	}
 
-	if err := h.svc.ChangePassword(c.Request.Context(), id.UserID, body); err != nil {
-		_ = c.Error(err)
-		return
+	if err := h.svc.ChangePassword(c.Context(), id.UserID, body); err != nil {
+		return err
 	}
-	response.NoContent(c)
+	return response.NoContent(c)
 }

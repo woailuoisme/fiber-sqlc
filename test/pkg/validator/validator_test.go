@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/aarondl/opt/omitnull"
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	govalidator "github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -24,13 +24,11 @@ import (
 	"cfiber/pkg/validator"
 )
 
-func init() { gin.SetMode(gin.TestMode) }
-
 // testValidator 是本包共享的校验器实例：TestMain 构造并挂载一次，
 // 所有用例通过同一个只读实例验证行为。
 var testValidator *validator.Validator
 
-// TestMain 构造并安装校验器，供依赖 gin 绑定的用例使用。
+// TestMain 构造并安装校验器，供依赖绑定的用例使用。
 func TestMain(m *testing.M) {
 	v, err := validator.New(validator.WithOmitNullTypes(omitnull.Val[testRoleType]{}))
 	if err != nil {
@@ -72,54 +70,84 @@ func newTranslator(t *testing.T, defaultLanguage string) i18n.Translator {
 	return translator
 }
 
-// newContext 构造带请求体的 gin 上下文。
-func newContext(body string) *gin.Context {
-	recorder := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Request = httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(body))
-	ctx.Request.Header.Set("Content-Type", "application/json")
-	return ctx
+// runWithCtx 构造 Fiber 应用并执行测试闭包。
+func runWithCtx(body string, acceptLang string, fn func(c fiber.Ctx) error) error {
+	app := fiber.New(fiber.Config{
+		StructValidator: testValidator,
+	})
+	var resultErr error
+	app.Post("/", func(c fiber.Ctx) error {
+		resultErr = fn(c)
+		return nil
+	})
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	if acceptLang != "" {
+		req.Header.Set("Accept-Language", acceptLang)
+	}
+	_, _ = app.Test(req)
+	return resultErr
 }
 
-// bindJSON 模拟 Gin 原生 ShouldBindJSON 并协同 translator 进行字段翻译。
-func bindJSON(t *testing.T, c *gin.Context, target any, translator i18n.Translator) error {
+// bindJSON 模拟 Fiber c.Bind().JSON 并协同 translator 进行字段翻译。
+func bindJSON(t *testing.T, body string, target any, translator i18n.Translator, lang ...string) error {
 	t.Helper()
-	err := c.ShouldBindJSON(target)
-	if err == nil {
-		return nil
+	var acceptLang string
+	if len(lang) > 0 {
+		acceptLang = lang[0]
 	}
-	if valErr, ok := errors.AsType[govalidator.ValidationErrors](err); ok {
-		lang := c.GetHeader("Accept-Language")
-		if translator != nil {
-			lang = translator.Language(lang)
+	var resErr error
+	_ = runWithCtx(body, acceptLang, func(c fiber.Ctx) error {
+		err := c.Bind().JSON(target)
+		if err == nil {
+			return nil
 		}
-		return errs.Validation(testValidator.Translate(translator, lang, valErr))
-	}
-	return err
+		if valErr, ok := errors.AsType[govalidator.ValidationErrors](err); ok {
+			reqLang := c.Get("Accept-Language")
+			if translator != nil {
+				reqLang = translator.Language(reqLang)
+			}
+			resErr = errs.Validation(testValidator.Translate(translator, reqLang, valErr))
+			return nil
+		}
+		resErr = err
+		return nil
+	})
+	return resErr
+}
+
+// bindOptionalJSON 测试 validator.BindOptionalJSON 行为。
+func bindOptionalJSON(body string, target any) error {
+	var resErr error
+	_ = runWithCtx(body, "", func(c fiber.Ctx) error {
+		resErr = validator.BindOptionalJSON(c, target)
+		return nil
+	})
+	return resErr
 }
 
 // TestJSONRejectsEmptyBody 校验空请求体是 400 而非 422（api.md 4.2）。
 func TestJSONRejectsEmptyBody(t *testing.T) {
 	var payload signupPayload
-	assertBadRequest(t, bindJSON(t, newContext(""), &payload, newTranslator(t, "en")))
+	assertBadRequest(t, bindJSON(t, "", &payload, newTranslator(t, "en")))
 }
 
 // TestJSONRejectsMalformedJSON 校验非法 JSON 是 400。
 func TestJSONRejectsMalformedJSON(t *testing.T) {
 	var payload signupPayload
-	assertBadRequest(t, bindJSON(t, newContext(`{"email":`), &payload, newTranslator(t, "en")))
+	assertBadRequest(t, bindJSON(t, `{"email":`, &payload, newTranslator(t, "en")))
 }
 
 // TestJSONRejectsWrongFieldType 校验字段类型不匹配是 400。
 func TestJSONRejectsWrongFieldType(t *testing.T) {
 	var payload signupPayload
-	assertBadRequest(t, bindJSON(t, newContext(`{"email":42}`), &payload, newTranslator(t, "en")))
+	assertBadRequest(t, bindJSON(t, `{"email":42}`, &payload, newTranslator(t, "en")))
 }
 
 // TestJSONReportsCleanFieldPaths 校验错误键是纯字段路径，不含根结构体类型名。
 func TestJSONReportsCleanFieldPaths(t *testing.T) {
 	var payload signupPayload
-	err := bindJSON(t, newContext(`{"email":"not-an-email","password":"short"}`), &payload, newTranslator(t, "en"))
+	err := bindJSON(t, `{"email":"not-an-email","password":"short"}`, &payload, newTranslator(t, "en"))
 	require.Error(t, err)
 
 	status, resp := errs.Map(err)
@@ -135,7 +163,7 @@ func TestCustomRules(t *testing.T) {
 
 	valid := `{"email":"a@b.com","password":"secret123","username":"alice_01","phoneNumber":"+8613800138000"}`
 	var accepted signupPayload
-	require.NoError(t, bindJSON(t, newContext(valid), &accepted, translator))
+	require.NoError(t, bindJSON(t, valid, &accepted, translator))
 
 	rejected := []struct {
 		name string
@@ -154,7 +182,7 @@ func TestCustomRules(t *testing.T) {
 	for _, tt := range rejected {
 		t.Run(tt.name, func(t *testing.T) {
 			var payload signupPayload
-			err := bindJSON(t, newContext(tt.body), &payload, translator)
+			err := bindJSON(t, tt.body, &payload, translator)
 			require.Error(t, err)
 
 			status, resp := errs.Map(err)
@@ -168,8 +196,7 @@ func TestCustomRules(t *testing.T) {
 func TestMinMaxWordingDependsOnKind(t *testing.T) {
 	var probe numericProbe
 	translator := newTranslator(t, "en")
-	ctx := newContext(`{"count":0,"name":""}`)
-	err := bindJSON(t, ctx, &probe, translator)
+	err := bindJSON(t, `{"count":0,"name":""}`, &probe, translator)
 	require.Error(t, err)
 
 	_, resp := errs.Map(err)
@@ -180,26 +207,23 @@ func TestMinMaxWordingDependsOnKind(t *testing.T) {
 // TestJSONOptionalToleratesEmptyBody 校验可省略请求体在空体时视为零值对象。
 func TestJSONOptionalToleratesEmptyBody(t *testing.T) {
 	var payload optionalBody
-	require.NoError(t, validator.BindOptionalJSON(newContext(""), &payload))
+	require.NoError(t, bindOptionalJSON("", &payload))
 	assert.Nil(t, payload.RefreshToken)
 }
 
 // TestJSONOptionalStillRejectsMalformedJSON 校验可省略请求体仍要求合法 JSON。
 func TestJSONOptionalStillRejectsMalformedJSON(t *testing.T) {
 	var payload optionalBody
-	assertBadRequest(t, validator.BindOptionalJSON(newContext(`{"refresh`), &payload))
+	assertBadRequest(t, bindOptionalJSON(`{"refresh`, &payload))
 }
 
 // TestLanguageNegotiatedFromHeader 校验校验文案随 Accept-Language 切换。
 func TestLanguageNegotiatedFromHeader(t *testing.T) {
 	translator := newTranslator(t, "en")
-	ctx := newContext(`{"email":"bad","password":"short"}`)
-	ctx.Request.Header.Set("Accept-Language", "zh-CN")
-
-	assert.Equal(t, "zh-CN", translator.Language(ctx.GetHeader("Accept-Language")))
+	assert.Equal(t, "zh-CN", translator.Language("zh-CN"))
 
 	var payload signupPayload
-	err := bindJSON(t, ctx, &payload, translator)
+	err := bindJSON(t, `{"email":"bad","password":"short"}`, &payload, translator, "zh-CN")
 	require.Error(t, err)
 
 	_, resp := errs.Map(err)
@@ -222,8 +246,7 @@ func TestPasswordStrength(t *testing.T) {
 
 // TestPasswordValidationRule 验证基于 tag 的 password 校验规则与多语言翻译。
 func TestPasswordValidationRule(t *testing.T) {
-	v, ok := binding.Validator.Engine().(*govalidator.Validate)
-	require.True(t, ok)
+	v := testValidator.Engine()
 
 	type testPasswordForm struct {
 		Password string `json:"password" validate:"password"`
@@ -300,27 +323,27 @@ func TestUsernameSlugAndE164LengthGuards(t *testing.T) {
 
 	// 1. 用户名超长 (65 字符)
 	longUsername := "a" + string(bytes.Repeat([]byte("b"), 65))
-	ctx1 := newContext(`{"email":"ok@example.com","password":"password1","username":"` + longUsername + `"}`)
+	body1 := `{"email":"ok@example.com","password":"password1","username":"` + longUsername + `"}`
 	var payload1 signupPayload
-	err1 := bindJSON(t, ctx1, &payload1, translator)
+	err1 := bindJSON(t, body1, &payload1, translator)
 	require.Error(t, err1)
 	_, resp1 := errs.Map(err1)
 	assert.Contains(t, resp1.Errors, "username")
 
 	// 2. 手机号超长 (> 20 字符)
 	longPhone := "+86138" + string(bytes.Repeat([]byte("0"), 20))
-	ctx2 := newContext(`{"email":"ok@example.com","password":"password1","phoneNumber":"` + longPhone + `"}`)
+	body2 := `{"email":"ok@example.com","password":"password1","phoneNumber":"` + longPhone + `"}`
 	var payload2 signupPayload
-	err2 := bindJSON(t, ctx2, &payload2, translator)
+	err2 := bindJSON(t, body2, &payload2, translator)
 	require.Error(t, err2)
 	_, resp2 := errs.Map(err2)
 	assert.Contains(t, resp2.Errors, "phoneNumber")
 
 	// 3. 手机号过短 (< 8 字符)
 	shortPhone := "+86"
-	ctx3 := newContext(`{"email":"ok@example.com","password":"password1","phoneNumber":"` + shortPhone + `"}`)
+	body3 := `{"email":"ok@example.com","password":"password1","phoneNumber":"` + shortPhone + `"}`
 	var payload3 signupPayload
-	err3 := bindJSON(t, ctx3, &payload3, translator)
+	err3 := bindJSON(t, body3, &payload3, translator)
 	require.Error(t, err3)
 	_, resp3 := errs.Map(err3)
 	assert.Contains(t, resp3.Errors, "phoneNumber")
@@ -392,8 +415,7 @@ type testUploadForm struct {
 
 // TestFileValidationRules 验证 file, image, maxsize, mimes 规则的判定与国际化翻译。
 func TestFileValidationRules(t *testing.T) {
-	v, ok := binding.Validator.Engine().(*govalidator.Validate)
-	require.True(t, ok)
+	v := testValidator.Engine()
 
 	t.Run("合法图片验证通过", func(t *testing.T) {
 		file := createTestFileHeader(t, "avatar", "test.png", validPNGBytes)
@@ -496,7 +518,7 @@ func TestValidatableInterface(t *testing.T) {
 	t.Run("通过基础校验且通过 Validate 钩子", func(t *testing.T) {
 		hookRun := false
 		form := complexRangeForm{StartTime: 10, EndTime: 20, hookRun: &hookRun}
-		err := binding.Validator.ValidateStruct(&form)
+		err := testValidator.ValidateStruct(&form)
 		require.NoError(t, err)
 		assert.True(t, hookRun)
 	})
@@ -505,7 +527,7 @@ func TestValidatableInterface(t *testing.T) {
 		hookRun := false
 		// StartTime 为 0，不满足 min=1
 		form := complexRangeForm{StartTime: 0, EndTime: 20, hookRun: &hookRun}
-		err := binding.Validator.ValidateStruct(&form)
+		err := testValidator.ValidateStruct(&form)
 		require.Error(t, err)
 		assert.False(t, hookRun, "Fail-Fast 保证在 tag 失败时不触发 Validate 钩子")
 	})
@@ -514,7 +536,7 @@ func TestValidatableInterface(t *testing.T) {
 		hookRun := false
 		// StartTime 10, EndTime 5，违反 EndTime > StartTime
 		form := complexRangeForm{StartTime: 10, EndTime: 5, hookRun: &hookRun}
-		err := binding.Validator.ValidateStruct(&form)
+		err := testValidator.ValidateStruct(&form)
 		require.Error(t, err)
 		assert.True(t, hookRun)
 
@@ -526,7 +548,7 @@ func TestValidatableInterface(t *testing.T) {
 
 	t.Run("Validate 返回原生 error 时自动包装为 422 VALIDATION_FAILED", func(t *testing.T) {
 		form := plainErrorForm{Value: 3} // 奇数
-		err := binding.Validator.ValidateStruct(&form)
+		err := testValidator.ValidateStruct(&form)
 		require.Error(t, err)
 
 		status, resp := errs.Map(err)
@@ -535,11 +557,10 @@ func TestValidatableInterface(t *testing.T) {
 		assert.Equal(t, "值必须为偶数", resp.Message)
 	})
 
-	t.Run("通过 Gin ShouldBindJSON 完整链路触发 Validatable", func(t *testing.T) {
+	t.Run("通过 Fiber Bind JSON 完整链路触发 Validatable", func(t *testing.T) {
 		translator := newTranslator(t, "zh-CN")
-		ctx := newContext(`{"startTime":100,"endTime":50}`)
 		var form complexRangeForm
-		err := bindJSON(t, ctx, &form, translator)
+		err := bindJSON(t, `{"startTime":100,"endTime":50}`, &form, translator)
 		require.Error(t, err)
 
 		status, resp := errs.Map(err)
@@ -564,8 +585,7 @@ type testPatchBody struct {
 
 // TestOmitNullValidation 验证三态 omitnull 容器字段与验证器解包、标量规则联动的准确性。
 func TestOmitNullValidation(t *testing.T) {
-	v, ok := binding.Validator.Engine().(*govalidator.Validate)
-	require.True(t, ok)
+	v := testValidator.Engine()
 
 	t.Run("全部字段未设置 (Unset) 时通过", func(t *testing.T) {
 		form := testPatchBody{}
