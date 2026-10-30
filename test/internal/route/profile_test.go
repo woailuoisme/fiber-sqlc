@@ -2,15 +2,13 @@
 package route_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
@@ -20,12 +18,10 @@ import (
 	"cfiber/internal/dto"
 	"cfiber/internal/enum"
 	"cfiber/internal/handler"
-	"cfiber/internal/media"
 	"cfiber/internal/middleware/global"
 	"cfiber/internal/service"
 	"cfiber/internal/user"
 	"cfiber/pkg/authentication"
-	"cfiber/pkg/errs"
 	"cfiber/pkg/validator"
 )
 
@@ -59,7 +55,7 @@ func TestUpdateProfileRequestShape(t *testing.T) {
 	var request dto.UpdateProfileBody
 	require.NoError(t, json.Unmarshal([]byte(`{
 		"name":"Alice",
-		"image":null,
+		"avatar_path":null,
 		"username":"alice_01",
 		"displayUsername":"Alice",
 		"phoneNumber":"+8613800138000",
@@ -74,17 +70,21 @@ func TestUpdateProfileRequestShape(t *testing.T) {
 	assert.NotContains(t, string(encoded), "role")
 
 	assert.True(t, request.Name.IsValue())
-	assert.True(t, request.Image.IsNull())
+	assert.True(t, request.AvatarPath.IsNull())
 	assert.True(t, request.Username.IsValue())
 	assert.True(t, request.DisplayUsername.IsValue())
 	assert.True(t, request.PhoneNumber.IsValue())
 }
 
-// TestUploadAvatarValidation 校验上传头像的权限要求、字段提取与魔数格式防御。
+// TestUploadAvatarValidation 校验上传头像的权限要求、字段提取与存在性校验。
 func TestUploadAvatarValidation(t *testing.T) {
-	avatars := &fakeAvatars{}
+	storage := &fakeStorage{
+		files: map[string]bool{
+			"uploads/avatars/valid.png": true,
+		},
+	}
 	users := &fakeUsers{profile: user.Profile{}}
-	handler := handler.NewProfileHandler(service.MustNewProfileService(service.ProfileDeps{Users: users, Avatars: avatars}))
+	handler := handler.NewProfileHandler(service.MustNewProfileService(service.ProfileDeps{Users: users, Storage: storage}))
 
 	newTestEngine := func(withAuth bool) *fiber.App {
 		app := fiber.New(fiber.Config{
@@ -106,96 +106,71 @@ func TestUploadAvatarValidation(t *testing.T) {
 
 	t.Run("未登录拒绝 401", func(t *testing.T) {
 		app := newTestEngine(false)
-		req := createMultipartRequest(t, "avatar", "avatar.png", []byte("dummy"))
+		req := createJSONRequest(http.MethodPost, "/v1/users/me/avatar", `{"avatar_path":"uploads/avatars/valid.png"}`)
 		code, _ := executeRequest(t, app, req)
 
 		assert.Equal(t, http.StatusUnauthorized, code)
 	})
 
-	t.Run("缺失文件返回 422", func(t *testing.T) {
+	t.Run("缺失 avatar_path 返回 422", func(t *testing.T) {
 		app := newTestEngine(true)
-		req := createMultipartRequest(t, "", "", nil)
+		req := createJSONRequest(http.MethodPost, "/v1/users/me/avatar", `{}`)
 		code, body := executeRequest(t, app, req)
 
 		assert.Equal(t, http.StatusUnprocessableEntity, code)
-		assert.Contains(t, body, "avatar")
+		assert.Contains(t, body, "avatar_path")
 	})
 
-	t.Run("非法扩展名返回 422", func(t *testing.T) {
+	t.Run("存储中不存在的对象路径返回 400", func(t *testing.T) {
 		app := newTestEngine(true)
-		req := createMultipartRequest(t, "avatar", "script.sh", []byte("#!/bin/sh\necho hack"))
+		req := createJSONRequest(http.MethodPost, "/v1/users/me/avatar", `{"avatar_path":"uploads/avatars/non_existent.png"}`)
 		code, body := executeRequest(t, app, req)
 
-		assert.Equal(t, http.StatusUnprocessableEntity, code)
-		assert.Contains(t, body, "avatar")
+		assert.Equal(t, http.StatusBadRequest, code)
+		assert.Contains(t, body, "does not exist in storage")
 	})
 
-	t.Run("超限尺寸 (大于 2MB) 返回 422", func(t *testing.T) {
+	t.Run("有效存储路径更新成功 200", func(t *testing.T) {
 		app := newTestEngine(true)
-		oversized := make([]byte, 2*1024*1024+16)
-		req := createMultipartRequest(t, "avatar", "huge.png", oversized)
+		req := createJSONRequest(http.MethodPost, "/v1/users/me/avatar", `{"avatar_path":"uploads/avatars/valid.png"}`)
 		code, body := executeRequest(t, app, req)
 
-		assert.Equal(t, http.StatusUnprocessableEntity, code)
-		assert.Contains(t, body, "avatar")
-	})
-
-	t.Run("伪装图片 (文本伪装成 png) 魔数检测拦截 422", func(t *testing.T) {
-		app := newTestEngine(true)
-		fakePNG := []byte("This is plain text pretending to be a png file")
-		req := createMultipartRequest(t, "avatar", "fake.png", fakePNG)
-		code, body := executeRequest(t, app, req)
-
-		assert.Equal(t, http.StatusUnprocessableEntity, code)
-		assert.Contains(t, body, "avatar")
-	})
-
-	t.Run("仅接受 avatar 字段，不匹配 file 字段返回 422", func(t *testing.T) {
-		app := newTestEngine(true)
-		req := createMultipartRequest(t, "file", "fake.png", []byte("content"))
-		code, body := executeRequest(t, app, req)
-
-		assert.Equal(t, http.StatusUnprocessableEntity, code)
-		assert.Contains(t, body, "avatar")
+		assert.Equal(t, http.StatusOK, code, body)
+		assert.True(t, users.updated)
+		assert.Equal(t, "uploads/avatars/valid.png", users.gotFields.AvatarPath.MustGet())
 	})
 }
 
-// TestUploadAvatarWritesImageInsideTransaction 校验合法头像会把签名 URL 写入 user.image，且作用域为客户端自助。
-func TestUploadAvatarWritesImageInsideTransaction(t *testing.T) {
-	avatars := &fakeAvatars{}
-	users := &fakeUsers{}
-	app := newAvatarEngine(t, avatars, users)
+// TestUploadAvatarWritesAvatarPath 校验合法头像会把相对 Key 写入 user.avatar_path，且作用域为客户端自助。
+func TestUploadAvatarWritesAvatarPath(t *testing.T) {
+	storage := &fakeStorage{
+		files: map[string]bool{
+			"uploads/avatars/new.png": true,
+		},
+	}
+	oldPath := "uploads/avatars/old.png"
+	users := &fakeUsers{
+		profile: user.Profile{AvatarPath: &oldPath},
+	}
+	app := newAvatarEngine(t, storage, users)
 
-	code, body := executeRequest(t, app, createMultipartRequest(t, "avatar", "avatar.png", pngHeader))
+	code, body := executeRequest(t, app, createJSONRequest(http.MethodPost, "/v1/users/me/avatar", `{"avatar_path":"uploads/avatars/new.png"}`))
 
 	require.Equal(t, http.StatusOK, code, body)
-	assert.Equal(t, 1, avatars.calls)
 	assert.True(t, users.updated)
 	assert.Equal(t, user.ScopeClient, users.gotScope)
 
-	image, ok := users.gotFields.Image.Get()
+	avatarPath, ok := users.gotFields.AvatarPath.Get()
 	require.True(t, ok)
-	assert.Equal(t, fakeAvatarURL, image)
-}
-
-// TestUploadAvatarAbortsWhenHostWriteFails 校验宿主回写失败时整笔头像替换失败，不返回成功档案。
-func TestUploadAvatarAbortsWhenHostWriteFails(t *testing.T) {
-	avatars := &fakeAvatars{}
-	users := &fakeUsers{err: errs.Internal(errors.New("write user image failed"))}
-	app := newAvatarEngine(t, avatars, users)
-
-	code, body := executeRequest(t, app, createMultipartRequest(t, "avatar", "avatar.png", pngHeader))
-
-	assert.Equal(t, http.StatusInternalServerError, code)
-	require.Error(t, avatars.linkErr, "宿主回写失败必须透传给媒体事务以触发回滚")
-	assert.NotContains(t, body, "write user image failed")
+	assert.Equal(t, "uploads/avatars/new.png", avatarPath)
+	assert.Contains(t, storage.deleted, oldPath, "旧头像必须被异步清理")
 }
 
 // newAvatarEngine 构造带认证注入与统一错误渲染的头像上传引擎。
-func newAvatarEngine(t *testing.T, avatars *fakeAvatars, users *fakeUsers) *fiber.App {
+func newAvatarEngine(t *testing.T, storage *fakeStorage, users *fakeUsers) *fiber.App {
 	t.Helper()
 
-	handler := handler.NewProfileHandler(service.MustNewProfileService(service.ProfileDeps{Users: users, Avatars: avatars}))
+	handler := handler.NewProfileHandler(service.MustNewProfileService(service.ProfileDeps{Users: users, Storage: storage}))
 	app := fiber.New(fiber.Config{
 		StructValidator: testValidator,
 		ErrorHandler:    global.HandleError,
@@ -211,39 +186,23 @@ func newAvatarEngine(t *testing.T, avatars *fakeAvatars, users *fakeUsers) *fibe
 	return app
 }
 
-// fakeAvatarURL 是 fake 媒体存储返回的固定签名地址。
-const fakeAvatarURL = "https://cdn.example.com/avatar_256.png"
-
-// pngHeader 是足以被魔数嗅探识别为 PNG 的最小文件头。
-var pngHeader = []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00")
-
-// fakeAvatars 复刻生产实现的关键语义：先校验文件，再在同一事务内回写宿主。
-type fakeAvatars struct {
-	err     error
-	calls   int
-	linkErr error
+// fakeStorage 模拟对象存储。
+type fakeStorage struct {
+	files   map[string]bool
+	deleted []string
 }
 
-func (f *fakeAvatars) ChangeAvatar(
-	ctx context.Context,
-	_ string,
-	file *multipart.FileHeader,
-	link func(ctx context.Context, url string) error,
-) (string, error) {
-	if err := media.ValidateAvatarFile(file); err != nil {
-		return "", err
+func (s *fakeStorage) Exists(_ context.Context, path string) (bool, error) {
+	if s.files == nil {
+		return false, nil
 	}
-	f.calls++
-	if f.err != nil {
-		return "", f.err
-	}
-	if link != nil {
-		if err := link(ctx, fakeAvatarURL); err != nil {
-			f.linkErr = err
-			return "", err
-		}
-	}
-	return fakeAvatarURL, nil
+	return s.files[path], nil
+}
+
+func (s *fakeStorage) Delete(_ context.Context, path string) error {
+	s.deleted = append(s.deleted, path)
+	delete(s.files, path)
+	return nil
 }
 
 // fakeUsers 记录档案写入入参，便于断言作用域与字段。
@@ -274,20 +233,9 @@ func (f *fakeUsers) UpdateProfile(
 	return f.profile, nil
 }
 
-// createMultipartRequest 构造带有指定表单字段的 multipart/form-data 测试请求。
-func createMultipartRequest(t *testing.T, fieldName, filename string, content []byte) *http.Request {
-	t.Helper()
-	var body bytes.Buffer
-	writer := multipart.NewWriter(&body)
-	if fieldName != "" {
-		part, err := writer.CreateFormFile(fieldName, filename)
-		require.NoError(t, err)
-		_, err = part.Write(content)
-		require.NoError(t, err)
-	}
-	require.NoError(t, writer.Close())
-
-	req := httptest.NewRequest(http.MethodPost, "/v1/users/me/avatar", &body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+// createJSONRequest 构造 JSON 测试请求。
+func createJSONRequest(method, target, body string) *http.Request {
+	req := httptest.NewRequest(method, target, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
 	return req
 }

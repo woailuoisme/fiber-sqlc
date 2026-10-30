@@ -154,11 +154,11 @@ alias db-shell := db
 
 # 生成前后台两套 OpenAPI 文档。
 # 分层扁平化后同层包混装两侧端点，无法再靠目录切分，改为按 Swagger Tag 收敛收录范围（AGENTS §5.2）：
-#   客户端规范 = 认证中心 + 个人资料 + 实时通信，并排除 admin 子目录减少解析开销；
+#   客户端规范 = 认证中心 + 个人资料 + 实时通信 + 媒体中心，并排除 admin 子目录减少解析开销；
 #   管理端规范 = 用户管理 + 管理员认证。
 # 支付中心（渠道回调）两套都不收录。
 docs:
-    swag init -d "$(find cmd internal pkg shared -type f -name '*.go' -exec dirname {} + | sort -u | paste -sd, -)" -g main.go -o shared/apidocs --parseInternal --outputTypes json --exclude internal/handler/admin,internal/dto/admin,internal/service/admin,internal/route/admin -t "认证中心,个人资料,实时通信"
+    swag init -d "$(find cmd internal pkg shared -type f -name '*.go' -exec dirname {} + | sort -u | paste -sd, -)" -g main.go -o shared/apidocs --parseInternal --outputTypes json --exclude internal/handler/admin,internal/dto/admin,internal/service/admin,internal/route/admin -t "认证中心,个人资料,实时通信,媒体中心"
     swag init -d "$(find cmd internal pkg shared -type f -name '*.go' -exec dirname {} + | sort -u | paste -sd, -)" -g admin_doc.go -o shared/apidocs/admin_tmp --parseInternal --outputTypes json -t "用户管理,管理员认证"
     mv shared/apidocs/admin_tmp/swagger.json shared/apidocs/admin_swagger.json
     rm -rf shared/apidocs/admin_tmp

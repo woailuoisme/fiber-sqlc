@@ -152,7 +152,7 @@ func generatedUserRows(total int) []map[string]any {
 			"phone_number_verified": true,
 		}
 		if i == 0 {
-			row["image"] = fmt.Sprintf("https://picsum.photos/seed/%d/200/200", i)
+			row["avatar_path"] = fmt.Sprintf("uploads/avatars/fixtures/user_%d.webp", i)
 		}
 		if i == 1 {
 			expires := time.Now().UTC().Add(30 * 24 * time.Hour)

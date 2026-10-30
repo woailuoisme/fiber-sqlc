@@ -20,6 +20,7 @@ type routeHandlers struct {
 	system    *handler.SystemHandler
 	auth      *handler.AuthHandler
 	profile   *handler.ProfileHandler
+	media     *handler.MediaHandler
 	admin     *adminhandler.UserHandler
 	adminAuth *adminhandler.AuthHandler
 	realtime  *handler.RealtimeHandler
@@ -30,6 +31,7 @@ type routeHandlers struct {
 func (h routeHandlers) mount(v1 fiber.Router, mw *middleware.Middleware) {
 	route.RegisterAuthRoutes(v1, h.auth, mw)
 	route.RegisterProfileRoutes(v1, h.profile, mw)
+	route.RegisterMediaRoutes(v1, h.media, mw)
 	adminroute.RegisterAdminAuthRoutes(v1, h.adminAuth, mw)
 	adminroute.RegisterAdminUserRoutes(v1, h.admin, mw)
 	route.RegisterRealtimeRoutes(v1, h.realtime, mw)
@@ -42,6 +44,7 @@ func zeroHandlers() routeHandlers {
 		system:    &handler.SystemHandler{},
 		auth:      &handler.AuthHandler{},
 		profile:   &handler.ProfileHandler{},
+		media:     &handler.MediaHandler{},
 		admin:     &adminhandler.UserHandler{},
 		adminAuth: &adminhandler.AuthHandler{},
 		realtime:  &handler.RealtimeHandler{},

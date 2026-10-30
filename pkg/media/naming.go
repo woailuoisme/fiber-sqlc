@@ -20,6 +20,11 @@ import (
 // sanitizedSuffixBytes 原始名策略随机后缀的字节数（3 字节 → 6 位十六进制）。
 const sanitizedSuffixBytes = 3
 
+// NamingStrategy 定义根据文件内容与原始文件名生成安全目标文件名与内容哈希的策略契约。
+type NamingStrategy interface {
+	GenerateName(ctx context.Context, originalName string, content []byte) (fileName, hash string)
+}
+
 var (
 	_ NamingStrategy = (*HashNamingStrategy)(nil)
 	_ NamingStrategy = (*UUIDNamingStrategy)(nil)

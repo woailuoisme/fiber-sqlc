@@ -6,13 +6,14 @@ import (
 
 	"cfiber/internal/config"
 	"cfiber/internal/database"
+	"cfiber/internal/dto"
 	"cfiber/internal/listener"
-	"cfiber/internal/media"
 	"cfiber/internal/notification/store"
 	"cfiber/internal/realtime"
 	"cfiber/pkg/cache"
 	"cfiber/pkg/eventbus"
 	"cfiber/pkg/mailer"
+	"cfiber/pkg/media"
 	"cfiber/pkg/notification"
 	"cfiber/pkg/payment"
 	"cfiber/pkg/queue"
@@ -93,12 +94,14 @@ var SubsystemPackage = do.Package(
 		return search.New(cfg.Search)
 	}),
 
-	// 7. 媒体资源处理管理器
-	do.Lazy(func(i do.Injector) (*media.Manager, error) {
+	// 7. 深度媒体处理引擎
+	do.Lazy(func(i do.Injector) (media.Engine, error) {
 		cfg := do.MustInvoke[*config.Config](i)
 		disk := do.MustInvoke[storage.Disk](i)
-		db := do.MustInvoke[*database.DB](i)
-		return media.New(cfg.Media, cfg.Storage, disk, db), nil
+		engine := media.NewEngine(cfg.Media, cfg.Storage, disk)
+		media.SetDefaultEngine(engine)
+		dto.SetDefaultEngine(engine)
+		return engine, nil
 	}),
 
 	// 8. 多渠道支付收单管理器

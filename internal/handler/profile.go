@@ -76,16 +76,16 @@ func (h *ProfileHandler) UpdateProfile(c fiber.Ctx) error {
 
 // UploadAvatar 处理 POST /v1/users/me/avatar。
 //
-// @Summary      上传本人头像
-// @Description  上传并更新当前登录用户的个人头像。仅允许上传不超过 2MB 的 JPEG、PNG 或 WebP 格式图片，自动按魔数头校验真实图像并清除历史旧头像。
+// @Summary      更新本人头像
+// @Description  保存客户端直传 S3 成功后的头像相对路径，自动校验存储对象存在性并清理历史旧头像。
 // @Tags         个人资料
-// @Accept       multipart/form-data
+// @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Param        avatar formData file true "头像图片文件 (最大 2MB，支持 JPEG/PNG/WebP)"
+// @Param        payload body dto.UpdateAvatarBody true "直传 S3 成功后的头像相对路径"
 // @Success      200 {object} dto.ProfileResource "更新头像后的本人档案"
+// @Failure      400 {object} errs.Response "路径非法或存储对象不存在"
 // @Failure      401 {object} errs.Response "未认证"
-// @Failure      422 {object} errs.Response "文件校验失败"
 // @x-order      3
 // @Router       /users/me/avatar [post]
 func (h *ProfileHandler) UploadAvatar(c fiber.Ctx) error {
@@ -95,18 +95,12 @@ func (h *ProfileHandler) UploadAvatar(c fiber.Ctx) error {
 	}
 	userID := identity.UserID
 
-	var body dto.UploadAvatarBody
-	if err := c.Bind().Form(&body); err != nil {
+	var body dto.UpdateAvatarBody
+	if err := c.Bind().JSON(&body); err != nil {
 		return err
 	}
-	if body.Avatar == nil {
-		file, err := c.FormFile("avatar")
-		if err == nil {
-			body.Avatar = file
-		}
-	}
 
-	profile, err := h.svc.UploadAvatar(c.Context(), userID, body.Avatar)
+	profile, err := h.svc.UpdateAvatar(c.Context(), userID, body.AvatarPath)
 	if err != nil {
 		return err
 	}

@@ -11,6 +11,11 @@ import (
 	"github.com/samber/lo"
 )
 
+// PathStrategy 定义将文件分散存储到分区目录（如按业务类别与日期）的路径规划契约。
+type PathStrategy interface {
+	GeneratePath(ctx context.Context, category, fileName string) string
+}
+
 // CategoryDatePathStrategy 将文件组织为 uploads/{category}/{YYYYMMDD}/{filename} 分区目录。
 type CategoryDatePathStrategy struct {
 	BasePrefix string

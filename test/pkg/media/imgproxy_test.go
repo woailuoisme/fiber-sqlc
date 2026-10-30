@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"cfiber/internal/config"
-	"cfiber/internal/media"
+	"cfiber/pkg/media"
 )
 
 func TestImgproxyClient_Signature(t *testing.T) {
