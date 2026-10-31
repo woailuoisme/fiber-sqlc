@@ -3,6 +3,8 @@ package media
 
 import (
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 // Preset 描述不可变的图像衍生处理规格值对象。
@@ -92,26 +94,20 @@ type ImageVariants struct {
 	ThumbURL string `json:"thumb_url" example:"https://img.example.com/sig2/rs:fill:64:64:1/g:fp:0:0/...@webp"`
 }
 
-// BuildImageVariants 根据相对路径与 Imgproxy 客户端，构建标准化图片衍生变体集。
-func BuildImageVariants(client Client, rawPath string) *ImageVariants {
+// BuildImageVariants 根据相对路径与可选的媒体引擎，构建标准化图片衍生变体集。
+// 未显式指定 engine 时自动使用全局 DefaultEngine()；路径为空时安全返回 nil。
+func BuildImageVariants(rawPath string, engine ...Engine) *ImageVariants {
 	cleanPath := strings.TrimSpace(rawPath)
 	if cleanPath == "" {
 		return nil
 	}
-	if client == nil && defaultEngine != nil {
-		return defaultEngine.Variants(cleanPath)
-	}
-	if client == nil {
+	e := lo.FirstOr(engine, defaultEngine)
+	if e == nil {
 		return &ImageVariants{
 			Path:     cleanPath,
 			URL:      cleanPath,
 			ThumbURL: cleanPath,
 		}
 	}
-
-	return &ImageVariants{
-		Path:     cleanPath,
-		URL:      client.Avatar(cleanPath, PresetAvatarLarge.Width),
-		ThumbURL: client.AvatarThumb(cleanPath),
-	}
+	return e.Variants(cleanPath)
 }

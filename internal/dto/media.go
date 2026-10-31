@@ -1,24 +1,14 @@
 package dto
 
 import (
-	"cmp"
+	"github.com/samber/lo"
 
 	"cfiber/pkg/media"
 )
 
-var defaultImageClient media.Client
-
 // SetDefaultEngine 设置全局默认媒体引擎，供 DTO 投影时构建带防篡改签名的访问地址。
 func SetDefaultEngine(engine media.Engine) {
 	media.SetDefaultEngine(engine)
-	if engine != nil {
-		defaultImageClient = engine.Image()
-	}
-}
-
-// SetDefaultImageClient 设置全局默认 Imgproxy 图像客户端。
-func SetDefaultImageClient(client media.Client) {
-	defaultImageClient = client
 }
 
 // PresignUploadBody 描述客户端申请 S3 预签名直传凭证的请求载荷。
@@ -50,11 +40,7 @@ type PresignUploadResource struct {
 // ImageVariantResource 封装标准化的富媒体图片复合响应对象。
 type ImageVariantResource = media.ImageVariants
 
-// BuildAvatar 根据存储相对路径与 Imgproxy 客户端构建复合头像对象；路径为空时安全返回 nil。
-func BuildAvatar(client media.Client, path *string) *ImageVariantResource {
-	if path == nil || *path == "" {
-		return nil
-	}
-	c := cmp.Or(client, defaultImageClient)
-	return media.BuildImageVariants(c, *path)
+// BuildAvatar 根据存储相对路径构建复合头像对象；路径为空时安全返回 nil。
+func BuildAvatar(path *string, engine ...media.Engine) *ImageVariantResource {
+	return media.BuildImageVariants(lo.FromPtr(path), engine...)
 }

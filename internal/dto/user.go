@@ -44,7 +44,7 @@ func ProjectUser(u *sqlc.User) UserResource {
 		Name:            profile.Name,
 		Email:           profile.Email,
 		EmailVerified:   profile.EmailVerified,
-		Avatar:          BuildAvatar(nil, profile.AvatarPath),
+		Avatar:          BuildAvatar(profile.AvatarPath),
 		Role:            profile.Role,
 		Username:        profile.Username,
 		DisplayUsername: profile.DisplayUsername,

@@ -220,7 +220,7 @@ func ToUserResource(entity *sqlc.User) UserResource {
 		Name:            profile.Name,
 		Email:           profile.Email,
 		EmailVerified:   profile.EmailVerified,
-		Avatar:          media.BuildImageVariants(nil, lo.FromPtr(profile.AvatarPath)),
+		Avatar:          media.BuildImageVariants(lo.FromPtr(profile.AvatarPath)),
 		Role:            profile.Role,
 		Username:        profile.Username,
 		DisplayUsername: profile.DisplayUsername,

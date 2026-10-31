@@ -181,20 +181,15 @@ func WithSharpen(sigma float64) ProcessOption {
 	}
 }
 
-// Client 定义现代化 imgproxy 客户端与图像元数据处理契约。
-type Client interface {
+// imageDriver 定义内部 imgproxy 驱动契约。
+type imageDriver interface {
 	URL(sourceURI string, opts ...ProcessOption) (string, error)
-	Avatar(sourceURI string, size ...int) string
-	AvatarThumb(sourceURI string) string
-	Thumbnail(sourceURI string, width, height int) string
 	Inspect(input []byte) (*ImageMeta, error)
-	ResolveSourceURI(path string) string
 	Ping(ctx context.Context) error
 	Driver() string
-	Enabled() bool
 }
 
-// client 结构体实现 Client 接口。
+// client 结构体实现 imageDriver 接口。
 type client struct {
 	baseURL     string
 	internalURL string
@@ -206,13 +201,8 @@ type client struct {
 	httpClient  *resty.Client
 }
 
-// NewImageClient 创建并初始化基于 imgproxy 的图像服务客户端。
-func NewImageClient(cfg config.ImgproxyConfig) Client {
-	return NewWithStorage(cfg, config.StorageConfig{})
-}
-
-// NewWithStorage 创建带存储配置的 imgproxy 图像服务客户端，用于按存储配置推导资源 URI。
-func NewWithStorage(imgCfg config.ImgproxyConfig, storageCfg config.StorageConfig) Client {
+// newImageDriver 创建带存储配置的 imgproxy 图像服务驱动，用于按存储配置推导资源 URI。
+func newImageDriver(imgCfg config.ImgproxyConfig, storageCfg config.StorageConfig) imageDriver {
 	mergedCfg := mergeImgproxyConfig(imgCfg)
 	baseURL, keyHex, saltHex := mergedCfg.ResolveCredentials()
 	keyBytes, _ := hex.DecodeString(keyHex)
@@ -259,7 +249,7 @@ func (c *client) URL(sourceURI string, opts ...ProcessOption) (string, error) {
 		return "", errs.BadRequest("source uri cannot be empty")
 	}
 
-	resolvedURI := c.ResolveSourceURI(sourceURI)
+	resolvedURI := c.resolveSourceURI(sourceURI)
 	cfg := &ProcessConfig{
 		Format:  NormalizeFormat(c.config.DefaultFormat),
 		Quality: c.config.DefaultQuality,
@@ -272,54 +262,6 @@ func (c *client) URL(sourceURI string, opts ...ProcessOption) (string, error) {
 	}
 
 	return c.generateURL(resolvedURI, cfg)
-}
-
-// DefaultAvatarSize 是默认头像边长尺寸（像素）。
-const DefaultAvatarSize = 256
-
-// DefaultThumbSize 是默认微缩图边长尺寸（像素）。
-const DefaultThumbSize = 64
-
-// Avatar 生成指定尺寸（缺省 256px）的头像防篡改签名 URL。
-func (c *client) Avatar(sourceURI string, size ...int) string {
-	sz := lo.FirstOrEmpty(size)
-	if sz <= 0 {
-		sz = DefaultAvatarSize
-	}
-	u, err := c.URL(sourceURI,
-		WithResizingType(ResizeFill),
-		WithResize(sz, sz),
-		WithGravity(GravityFocusPoint),
-	)
-	if err != nil {
-		return ""
-	}
-	return u
-}
-
-// AvatarThumb 生成 64px 微缩图防篡改签名 URL。
-func (c *client) AvatarThumb(sourceURI string) string {
-	u, err := c.URL(sourceURI,
-		WithResizingType(ResizeFill),
-		WithResize(DefaultThumbSize, DefaultThumbSize),
-		WithGravity(GravityFocusPoint),
-	)
-	if err != nil {
-		return ""
-	}
-	return u
-}
-
-// Thumbnail 生成指定宽高的缩略图防篡改签名 URL。
-func (c *client) Thumbnail(sourceURI string, width, height int) string {
-	u, err := c.URL(sourceURI,
-		WithResizingType(ResizeFill),
-		WithResize(width, height),
-	)
-	if err != nil {
-		return ""
-	}
-	return u
 }
 
 // Inspect 纯 Go 标准库轻量解析图像宽高与格式（零 CGO）。
@@ -341,8 +283,8 @@ func (c *client) Inspect(input []byte) (*ImageMeta, error) {
 	}, nil
 }
 
-// ResolveSourceURI 根据底层存储驱动自适应补全 URI（如 local:// 或 s3://）。
-func (c *client) ResolveSourceURI(sourcePath string) string {
+// resolveSourceURI 根据底层存储驱动自适应补全 URI（如 local:// 或 s3://）。
+func (c *client) resolveSourceURI(sourcePath string) string {
 	cleanPath := strings.TrimSpace(sourcePath)
 	if cleanPath == "" {
 		return ""
@@ -394,11 +336,6 @@ func (c *client) Ping(ctx context.Context) error {
 // Driver 返回当前图像服务驱动名称。
 func (c *client) Driver() string {
 	return "imgproxy"
-}
-
-// Enabled 报告当前图像服务是否启用。
-func (c *client) Enabled() bool {
-	return c.config.IsEnabled()
 }
 
 // generateURL 内部组装处理参数并生成最终签名或非签名 URL。

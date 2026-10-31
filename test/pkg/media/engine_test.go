@@ -5,8 +5,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"image"
+	"image/png"
 	"io"
 	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -227,7 +231,7 @@ func TestEngine_SignAndVariants(t *testing.T) {
 		media.SetDefaultEngine(engine)
 		defer media.SetDefaultEngine(nil)
 
-		variants := media.BuildImageVariants(nil, testPath)
+		variants := media.BuildImageVariants(testPath)
 		require.NotNil(t, variants)
 		assert.Equal(t, testPath, variants.Path)
 		assert.True(t, strings.HasPrefix(variants.URL, "https://img.example.com/"))
@@ -237,6 +241,76 @@ func TestEngine_SignAndVariants(t *testing.T) {
 	t.Run("空路径 Variants 返回 nil", func(t *testing.T) {
 		assert.Nil(t, engine.Variants(""))
 		assert.Nil(t, engine.Variants("   "))
+	})
+
+	t.Run("SignWithOptions 针对自定义选项构建 URL", func(t *testing.T) {
+		url, err := engine.SignWithOptions(testPath,
+			media.WithResizingType(media.ResizeFill),
+			media.WithResize(100, 100),
+		)
+		require.NoError(t, err)
+		assert.Contains(t, url, "/rs:fill:100:100:")
+	})
+}
+
+func TestEngine_Inspect(t *testing.T) {
+	engine, _ := setupTestEngine(t)
+
+	t.Run("有效 PNG 字节切片成功解析元数据", func(t *testing.T) {
+		img := image.NewRGBA(image.Rect(0, 0, 120, 80))
+		var buf bytes.Buffer
+		err := png.Encode(&buf, img)
+		require.NoError(t, err)
+
+		meta, err := engine.Inspect(buf.Bytes())
+		require.NoError(t, err)
+		require.NotNil(t, meta)
+		assert.Equal(t, 120, meta.Width)
+		assert.Equal(t, 80, meta.Height)
+		assert.Equal(t, media.FormatPNG, meta.Format)
+		assert.Equal(t, int64(buf.Len()), meta.Size)
+	})
+
+	t.Run("空字节流返回错误", func(t *testing.T) {
+		_, err := engine.Inspect(nil)
+		require.Error(t, err)
+	})
+}
+
+func TestEngine_CategoryPolicy(t *testing.T) {
+	ctx := t.Context()
+	engine, _ := setupTestEngine(t)
+
+	t.Run("Avatar 类目超出 5MB 上限被拦截", func(t *testing.T) {
+		_, err := engine.Presign(ctx, media.PresignRequest{
+			Category: "avatars",
+			FileName: "avatar.png",
+			FileSize: 6 * 1024 * 1024, // 6MB > 5MB
+			MimeType: "image/png",
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "exceeds maximum limit")
+	})
+
+	t.Run("Avatar 类目非允许扩展名被拦截", func(t *testing.T) {
+		_, err := engine.Presign(ctx, media.PresignRequest{
+			Category: "avatars",
+			FileName: "script.sh",
+			FileSize: 1024,
+			MimeType: "text/x-shellscript",
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("Avatar 类目非允许 MIME 被拦截", func(t *testing.T) {
+		_, err := engine.Presign(ctx, media.PresignRequest{
+			Category: "avatars",
+			FileName: "fake.png",
+			FileSize: 1024,
+			MimeType: "application/pdf",
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "MIME type")
 	})
 }
 
@@ -266,9 +340,21 @@ func TestEngine_ExistsAndDelete(t *testing.T) {
 }
 
 func TestEngine_Metadata(t *testing.T) {
-	engine, disk := setupTestEngine(t)
-
+	engine, _ := setupTestEngine(t)
 	assert.Equal(t, "imgproxy", engine.Driver())
-	assert.NotNil(t, engine.Image())
-	assert.Equal(t, disk, engine.Disk())
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("imgproxy is running"))
+	}))
+	t.Cleanup(server.Close)
+
+	pingEngine := media.NewEngine(config.MediaConfig{
+		Imgproxy: config.ImgproxyConfig{
+			Enabled:     true,
+			BaseURL:     server.URL,
+			InternalURL: server.URL,
+			Insecure:    true,
+		},
+	}, config.StorageConfig{Driver: "memory-mock"}, nil)
+	require.NoError(t, pingEngine.Ping(t.Context()))
 }
