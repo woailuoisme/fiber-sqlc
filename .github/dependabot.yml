@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # Go 依赖（go.mod / go.sum），依赖面广，合并单个 PR 便于统一验证与回滚
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      go-modules: { patterns: ["*"] }
+
+  # 保持 workflow 里的 uses 为最新主版本；actions 彼此独立，合并成单个 PR 便于回滚
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: { interval: weekly }
+    groups:
+      actions: { patterns: ["*"] }
