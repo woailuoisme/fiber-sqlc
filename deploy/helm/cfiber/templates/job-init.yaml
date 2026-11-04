@@ -1,0 +1,45 @@
+{{- if .Values.initJob.enabled -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "cfiber.fullname" . }}-init-{{ randAlphaNum 5 | lower }}
+  labels:
+    {{- include "cfiber.labels" (dict "context" . "component" "init-job") | nindent 4 }}
+  annotations:
+    {{- with .Values.initJob.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      name: {{ include "cfiber.fullname" . }}-init
+      labels:
+        {{- include "cfiber.labels" (dict "context" . "component" "init-job") | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "cfiber.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: init
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ if .Values.image.registry }}{{ .Values.image.registry }}/{{ end }}{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.initJob.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.initJob.resources | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "cfiber.fullname" . }}-config
+            - secretRef:
+                name: {{ include "cfiber.secretName" . }}
+{{- end }}

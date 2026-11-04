@@ -1,6 +1,6 @@
 # 代码安全扫描配置
 # 文档: https://docs.cnb.cool/zh/build/configuration.html
-# 项目: cfiber (Go Gin Application)
+# 项目: cfiber (Go Fiber Application)
 #
 # 规范: https://docs.cnb.cool/code-security-conf-schema-zh.json
 # 所有扫描能力默认开启，可通过 ignoreFrom 指向 .scanignore 文件来禁用
@@ -14,7 +14,7 @@ secrets:
   rules:
     - name: "Ignore fake secrets in test data"
       when:
-        paths: ["**/tests/**"]
+        paths: ["**/test/**"]
         severity: ["low"]
       then:
         ignore: true
@@ -34,5 +34,5 @@ tca:
       - "pkg/**"
       - "configs/**"
       - "database/**"
-      - "tests/**"
+      - "test/**"
     ignoreFrom: ".scanignore"

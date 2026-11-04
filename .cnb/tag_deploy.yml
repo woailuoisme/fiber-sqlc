@@ -1,6 +1,6 @@
 # 多环境部署配置
 # 文档: https://docs.cnb.cool/zh/build/deploy.html
-# 项目: cfiber | 端口: 3300 | 健康检查: /healthz
+# 项目: cfiber | 端口: 3300 | 健康检查: /livez
 #
 # 流程：推送 v* 标签 → .cnb.yml 的 tag_push 构建镜像 → 分支页「部署」按钮 → 执行下方环境
 
@@ -35,9 +35,9 @@ environments:
       - name: Post-deploy verification
         description: "Confirm health check endpoint"
         script: |
-          # 等待服务就绪后验证 /healthz（端口 3300）
+          # 等待服务就绪后验证 /livez（端口 3300）
           # for i in {1..30}; do
-          #   curl -sf http://staging.your-domain.com:3300/healthz && break
+          #   curl -sf http://staging.your-domain.com:3300/livez && break
           #   sleep 2
           # done
 
@@ -83,4 +83,4 @@ environments:
         description: "Confirm health check endpoint"
         script: |
           # 生产验证逻辑（端口 3300）
-          # curl -sf http://prod.your-domain.com:3300/healthz || exit 1
+          # curl -sf http://prod.your-domain.com:3300/livez || exit 1

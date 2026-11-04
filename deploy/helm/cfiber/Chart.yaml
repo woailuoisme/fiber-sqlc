@@ -1,0 +1,15 @@
+apiVersion: v2
+name: cfiber
+description: Production-grade Helm chart for cfiber RESTful Web API and Asynq Worker
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+icon: https://gofiber.io/assets/images/logo.svg
+keywords:
+  - golang
+  - fiber
+  - sqlc
+  - postgres
+  - asynq
+maintainers:
+  - name: seaside
