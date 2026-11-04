@@ -71,3 +71,4 @@ Resolve the name of the secret containing sensitive credentials
 {{- include "cfiber.fullname" . }}
 {{- end }}
 {{- end }}
+

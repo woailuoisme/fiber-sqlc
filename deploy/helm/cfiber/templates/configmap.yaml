@@ -26,3 +26,4 @@ data:
   {{- range $key, $val := .Values.config.extraEnv }}
   {{ $key }}: {{ $val | quote }}
   {{- end }}
+

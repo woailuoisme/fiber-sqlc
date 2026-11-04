@@ -26,3 +26,4 @@
 3. Check Asynq Worker status:
   kubectl get pods -n {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "cfiber.name" . }},app.kubernetes.io/component=worker"
 {{- end }}
+
