@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"log/slog"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 
@@ -47,9 +49,9 @@ func (h *PaymentHandler) HandleNotification(c fiber.Ctx) error {
 	channel := payment.Channel(pathParams.Channel)
 	if !channel.IsValid() {
 		// 报文里不拼接调用方原始输入，渠道值只进结构化日志。
-		logger.FromContext(c.Context()).Warn().
-			Str("channel", pathParams.Channel).
-			Msg("unsupported payment channel callback received")
+		logger.FromContext(c.Context()).WarnContext(c.Context(), "unsupported payment channel callback received",
+			slog.String("channel", pathParams.Channel),
+		)
 		return errs.BadRequest(service.MsgUnsupportedChannel)
 	}
 
@@ -65,11 +67,11 @@ func (h *PaymentHandler) HandleNotification(c fiber.Ctx) error {
 	// 1. 严格验签并解析 HTTP 报文 (微信商户证书/微信平台证书/支付宝公钥证书)
 	notification, err := h.gateway.ParseNotification(c.Context(), channel, pathParams.App, httpReq)
 	if err != nil {
-		logger.FromContext(c.Context()).Warn().
-			Err(err).
-			Str("channel", channel.String()).
-			Str("app_key", pathParams.App).
-			Msg("payment callback verification or parsing failed")
+		logger.FromContext(c.Context()).WarnContext(c.Context(), "payment callback verification or parsing failed",
+			slog.Any("error", err),
+			slog.String("channel", channel.String()),
+			slog.String("app_key", pathParams.App),
+		)
 
 		return replyAck(c, payment.FailureAck(channel))
 	}
@@ -77,7 +79,9 @@ func (h *PaymentHandler) HandleNotification(c fiber.Ctx) error {
 	// 2. 将解析好的纯领域通知交给 Service 协调幂等控制与事件分发
 	ack, err := h.svc.ProcessNotification(c.Context(), channel, notification)
 	if err != nil {
-		logger.FromContext(c.Context()).Error().Err(err).Msg("payment notification processing failed")
+		logger.FromContext(c.Context()).ErrorContext(c.Context(), "payment notification processing failed",
+			slog.Any("error", err),
+		)
 	}
 
 	// 渠道统一按渠道协议返回 200 及对应报文内容。
@@ -110,7 +114,9 @@ func (h *PaymentHandler) HandleAlipayReturn(c fiber.Ctx) error {
 	// 对 URL Query 参数进行支付宝公钥验签
 	notification, err := h.gateway.ParseNotification(ctx, payment.ChannelAlipay, "", httpReq)
 	if err != nil {
-		log.Warn().Err(err).Msg("alipay return verification failed, redirecting to order failure page")
+		log.WarnContext(ctx, "alipay return verification failed, redirecting to order failure page",
+			slog.Any("error", err),
+		)
 		return c.Redirect().Status(fiber.StatusFound).To(h.svc.FailureRedirectURL())
 	}
 
@@ -123,10 +129,10 @@ func (h *PaymentHandler) HandleAlipayReturn(c fiber.Ctx) error {
 	}
 
 	redirectURL := h.svc.BuildAlipayReturnURL(outTradeNo)
-	log.Info().
-		Str("out_trade_no", outTradeNo).
-		Str("redirect_url", redirectURL).
-		Msg("alipay return callback verified, redirecting to frontend")
+	log.InfoContext(ctx, "alipay return callback verified, redirecting to frontend",
+		slog.String("out_trade_no", outTradeNo),
+		slog.String("redirect_url", redirectURL),
+	)
 
 	return c.Redirect().Status(fiber.StatusFound).To(redirectURL)
 }

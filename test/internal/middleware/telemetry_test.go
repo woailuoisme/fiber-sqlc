@@ -73,7 +73,7 @@ func TestTelemetryMiddleware_TraceLogCorrelation(t *testing.T) {
 
 	app.Get("/test-trace", func(c fiber.Ctx) error {
 		log := logger.FromContext(c.Context())
-		log.Info().Msg("executing test handler")
+		log.InfoContext(c.Context(), "executing test handler")
 		return c.SendString("ok")
 	})
 

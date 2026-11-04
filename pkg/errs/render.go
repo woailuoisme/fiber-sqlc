@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strconv"
@@ -93,17 +94,18 @@ func Render(c fiber.Ctx, err error) error {
 	if status >= fiber.StatusInternalServerError {
 		// 5xx 记录底层根因与调用堆栈，避免对外统一文案遮蔽排错细节。
 		log := logger.FromContext(c.Context())
-		event := log.Error().
-			Str("stack", Stack(err)).
-			Err(RootCause(err)).
-			Int("status", status).
-			Str("code", resp.Code)
+		attrs := []slog.Attr{
+			slog.String("stack", Stack(err)),
+			slog.Any("error", RootCause(err)),
+			slog.Int("status", status),
+			slog.String("code", resp.Code),
+		}
 		if extra := OopsFields(err); len(extra) > 0 {
 			for _, f := range extra {
-				event = event.Any(f.Key, f.Value)
+				attrs = append(attrs, slog.Any(f.Key, f.Value))
 			}
 		}
-		event.Msg("request processing failed")
+		log.LogAttrs(c.Context(), slog.LevelError, "request processing failed", attrs...)
 	}
 
 	return c.Status(status).JSON(resp)

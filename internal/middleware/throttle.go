@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -105,14 +106,15 @@ func ThrottleWithStorage(storage fiber.Storage, limit int, window time.Duration,
 				c.Set("X-RateLimit-Reset", retryAfterSec)
 			}
 
-			logger.FromContext(c.Context()).Warn().
-				Str("tier", tierPrefix).
-				Str("scope", scope).
-				Int("limit", limit).
-				Str("path", c.Path()).
-				Str("method", c.Method()).
-				Str("ip", c.IP()).
-				Msg("rate limit exceeded")
+			ctx := c.Context()
+			logger.FromContext(ctx).WarnContext(ctx, "rate limit exceeded",
+				slog.String("tier", tierPrefix),
+				slog.String("scope", scope),
+				slog.Int("limit", limit),
+				slog.String("path", c.Path()),
+				slog.String("method", c.Method()),
+				slog.String("ip", c.IP()),
+			)
 
 			if cfg.onRejected != nil {
 				return cfg.onRejected(c)

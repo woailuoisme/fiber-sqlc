@@ -4,7 +4,6 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v3"
-	"github.com/rs/zerolog"
 
 	"cfiber/internal/config"
 	"cfiber/pkg/authentication"
@@ -17,7 +16,7 @@ type Deps struct {
 	AuthManager *authentication.Manager
 	Storage     fiber.Storage
 	Authz       *authorization.Enforcer
-	Logger      *zerolog.Logger
+	Logger      *logger.Logger
 	Limiter     config.LimiterConfig
 }
 
@@ -26,7 +25,7 @@ type Middleware struct {
 	authManager *authentication.Manager
 	storage     fiber.Storage
 	authz       *authorization.Enforcer
-	log         *zerolog.Logger
+	log         *logger.Logger
 	limiter     config.LimiterConfig
 }
 

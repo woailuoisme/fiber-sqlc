@@ -3,6 +3,7 @@ package global
 import (
 	"cmp"
 	"encoding/hex"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -79,32 +80,42 @@ func (m *Middleware) AccessLog() fiber.Handler {
 			return nil
 		}
 
-		event := baseLog.Info()
+		level := slog.LevelInfo
 		switch {
 		case status >= fiber.StatusInternalServerError:
-			event = baseLog.Error()
+			level = slog.LevelError
 		case status >= fiber.StatusBadRequest:
-			event = baseLog.Warn()
+			level = slog.LevelWarn
 		}
 
+		ctx := c.Context()
+		if !baseLog.Enabled(ctx, level) {
+			return nil
+		}
+
+		attrs := make([]slog.Attr, 0, 8)
 		if rid := requestIDOf(c); rid != "" {
-			event = event.Str("request_id", rid)
+			// 控制台开发模式下，普通 2xx/3xx 访问日志省略冗长 request_id，仅在 4xx/5xx 或出错时输出
+			if m.production || status >= fiber.StatusBadRequest || chainErr != nil {
+				attrs = append(attrs, slog.String("request_id", rid))
+			}
 		}
 		if chainErr != nil {
-			event = event.Str("error", chainErr.Error())
+			attrs = append(attrs, slog.String("error", chainErr.Error()))
 		}
 		if code := errs.ErrorCodeFromContext(c); code != "" {
-			event = event.Str("code", code)
+			attrs = append(attrs, slog.String("code", code))
 		}
 
-		event.
-			Str("method", c.Method()).
-			Str("path", c.Path()).
-			Int("status", status).
-			Str("latency", time.Since(start).String()).
-			Str("ip", c.IP()).
-			Msg("access")
+		attrs = append(attrs,
+			slog.String("method", c.Method()),
+			slog.String("path", c.Path()),
+			slog.Int("status", status),
+			slog.Duration("latency", time.Since(start)),
+			slog.String("ip", c.IP()),
+		)
 
+		baseLog.LogAttrs(ctx, level, "access", attrs...)
 		return nil
 	}
 }
@@ -132,9 +143,10 @@ func (m *Middleware) Recovery() fiber.Handler {
 	return recover.New(recover.Config{
 		EnableStackTrace: true,
 		StackTraceHandler: func(c fiber.Ctx, e any) {
-			logger.FromContext(c.Context()).Error().
-				Any("panic", e).
-				Msg("request panic recovered")
+			ctx := c.Context()
+			logger.FromContext(ctx).ErrorContext(ctx, "request panic recovered",
+				slog.Any("panic", e),
+			)
 		},
 	})
 }

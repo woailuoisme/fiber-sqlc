@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"strconv"
 	"time"
@@ -82,13 +83,14 @@ func (a *Application) logStartup(data fiber.ListenData) {
 		log = logger.Default()
 	}
 
-	event := log.Info().
-		Str("addr", addr).
-		Str("url", base).
-		Str("env", a.cfg.App.Env).
-		Str("storage", a.cfg.Storage.Driver)
-	if a.cfg.App.EnableDocs {
-		event = event.Str("docs", base+docsPagePath)
+	attrs := []slog.Attr{
+		slog.String("addr", addr),
+		slog.String("url", base),
+		slog.String("env", a.cfg.App.Env),
+		slog.String("storage", a.cfg.Storage.Driver),
 	}
-	event.Msg("HTTP server started and listening")
+	if a.cfg.App.EnableDocs {
+		attrs = append(attrs, slog.String("docs", base+docsPagePath))
+	}
+	log.LogAttrs(context.Background(), slog.LevelInfo, "HTTP server started and listening", attrs...)
 }

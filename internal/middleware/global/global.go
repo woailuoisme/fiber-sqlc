@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/rs/zerolog"
 
 	"cfiber/internal/config"
 	"cfiber/pkg/cache"
@@ -22,7 +21,7 @@ import (
 type Deps struct {
 	Cache          cache.Store
 	Storage        fiber.Storage
-	Logger         *zerolog.Logger
+	Logger         *logger.Logger
 	CORS           config.CORSConfig
 	Production     bool
 	Translator     i18n.Translator
@@ -38,7 +37,7 @@ type Deps struct {
 type Middleware struct {
 	cache          cache.Store
 	storage        fiber.Storage
-	logger         *zerolog.Logger
+	logger         *logger.Logger
 	cors           config.CORSConfig
 	production     bool
 	translator     i18n.Translator

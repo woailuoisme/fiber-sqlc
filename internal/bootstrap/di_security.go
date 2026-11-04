@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"github.com/gofiber/fiber/v3"
-	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
 	"cfiber/internal/config"
@@ -16,6 +15,7 @@ import (
 	"cfiber/pkg/cache"
 	"cfiber/pkg/hasher"
 	"cfiber/pkg/i18n"
+	"cfiber/pkg/logger"
 	"cfiber/pkg/validator"
 )
 
@@ -74,7 +74,7 @@ var SecurityPackage = do.Package(
 	do.Lazy(func(i do.Injector) (*global.Middleware, error) {
 		cfg := do.MustInvoke[*config.Config](i)
 		c := do.MustInvoke[cache.Store](i)
-		log := do.MustInvoke[*zerolog.Logger](i)
+		log := do.MustInvoke[*logger.Logger](i)
 		translator := do.MustInvoke[i18n.Translator](i)
 		val := do.MustInvoke[*validator.Validator](i)
 		storage := do.MustInvoke[fiber.Storage](i)
@@ -98,7 +98,7 @@ var SecurityPackage = do.Package(
 		authManager := do.MustInvoke[*platformauth.Manager](i)
 		storage := do.MustInvoke[fiber.Storage](i)
 		enforcer := do.MustInvoke[*authorization.Enforcer](i)
-		log := do.MustInvoke[*zerolog.Logger](i)
+		log := do.MustInvoke[*logger.Logger](i)
 
 		return middleware.New(middleware.Deps{
 			AuthManager: authManager,

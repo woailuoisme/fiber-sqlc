@@ -10,12 +10,12 @@ import (
 
 // MediaHandler 是媒体上传与预签名凭据端点的 HTTP 适配层。
 type MediaHandler struct {
-	engine media.Engine
+	uploader media.Uploader
 }
 
 // NewMediaHandler 构造 MediaHandler。
-func NewMediaHandler(engine media.Engine) *MediaHandler {
-	return &MediaHandler{engine: engine}
+func NewMediaHandler(uploader media.Uploader) *MediaHandler {
+	return &MediaHandler{uploader: uploader}
 }
 
 // Presign 处理 POST /v1/media/presign。
@@ -38,7 +38,7 @@ func (h *MediaHandler) Presign(c fiber.Ctx) error {
 		return err
 	}
 
-	res, err := h.engine.Presign(c.Context(), media.PresignRequest{
+	res, err := h.uploader.Presign(c.Context(), media.PresignRequest{
 		Category: body.Category,
 		FileName: body.FileName,
 		FileSize: body.FileSize,

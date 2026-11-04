@@ -213,14 +213,18 @@ type UserPageResource struct {
 }
 
 // ToUserResource 把模型投影为管理视角的响应资源。
-func ToUserResource(entity *sqlc.User) UserResource {
+func ToUserResource(entity *sqlc.User, signer ...media.Signer) UserResource {
 	profile := user.ProjectProfile(entity)
+	var s media.Signer
+	if len(signer) > 0 {
+		s = signer[0]
+	}
 	return UserResource{
 		ID:              profile.ID,
 		Name:            profile.Name,
 		Email:           profile.Email,
 		EmailVerified:   profile.EmailVerified,
-		Avatar:          media.BuildImageVariants(lo.FromPtr(profile.AvatarPath)),
+		Avatar:          media.BuildImageVariants(lo.FromPtr(profile.AvatarPath), s),
 		Role:            profile.Role,
 		Username:        profile.Username,
 		DisplayUsername: profile.DisplayUsername,

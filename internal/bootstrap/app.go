@@ -3,20 +3,21 @@ package bootstrap
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
 	"cfiber/internal/config"
 	"cfiber/pkg/eventbus"
+	"cfiber/pkg/logger"
 )
 
 // Application 聚合装配完成的 HTTP 引擎与依赖容器。
 type Application struct {
 	cfg      *config.Config
-	logger   *zerolog.Logger
+	logger   *logger.Logger
 	eventbus *eventbus.Manager
 	engine   *fiber.App
 	injector *do.RootScope
@@ -33,6 +34,6 @@ func (a *Application) Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := a.injector.ShutdownWithContext(ctx); err != nil && a.logger != nil {
-		a.logger.Error().Err(err).Msg("application shutdown did not complete cleanly")
+		a.logger.ErrorContext(ctx, "application shutdown did not complete cleanly", slog.Any("error", err))
 	}
 }
