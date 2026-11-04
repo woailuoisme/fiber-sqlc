@@ -121,7 +121,6 @@ pkg/                            # 可复用的横切基础设施与跨切片基�
 ├── notification/               # 通知渠道抽象、异步工作池与多通道驱动
 ├── payment/                    # 微信/支付宝收单网关与 Fake 渠道
 ├── pdf/                        # maroto 报表渲染与字体注册
-├── qrcode/                     # 二维码生成与渲染
 ├── queue/                      # Asynq 队列客户端、调度与中间件管线
 ├── ready/                      # 就绪探针契约与组件状态机
 ├── realtime/                   # Centrifugo 凭据签发与订阅代理

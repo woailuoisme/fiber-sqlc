@@ -59,7 +59,8 @@ func TestResolveDBDebug(t *testing.T) {
 				App:      config.AppConfig{Debug: tt.appDebug},
 				Database: config.DatabaseConfig{Debug: tt.dbDebug},
 			}
-			assert.Equal(t, tt.want, cfg.ResolveDBDebug())
+			cfg.Normalize()
+			assert.Equal(t, tt.want, cfg.Database.Debug)
 		})
 	}
 }

@@ -97,7 +97,7 @@ func TestRateLimit_Allowed(t *testing.T) {
 	store := newMockRateLimitStore()
 
 	app := fiber.New()
-	app.Use(middleware.ThrottleWithStore(store, 10, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
+	app.Use(middleware.ThrottleWithStorage(store, 10, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
 	app.Get("/test", func(c fiber.Ctx) error {
 		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "ok"})
 	})
@@ -120,7 +120,7 @@ func TestRateLimit_Exceeded(t *testing.T) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
 	})
-	app.Use(middleware.ThrottleWithStore(store, 2, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
+	app.Use(middleware.ThrottleWithStorage(store, 2, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
 	app.Get("/test", func(c fiber.Ctx) error {
 		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "ok"})
 	})
@@ -161,7 +161,7 @@ func TestRateLimit_SlidingWindow(t *testing.T) {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
 	})
-	app.Use(middleware.ThrottleWithStore(store, 5, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
+	app.Use(middleware.ThrottleWithStorage(store, 5, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
 	app.Get("/test", func(c fiber.Ctx) error {
 		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "ok"})
 	})
@@ -188,7 +188,7 @@ func TestRateLimit_StoreFailOpen(t *testing.T) {
 	store.err = errors.New("redis connection refused")
 
 	app := fiber.New()
-	app.Use(middleware.ThrottleWithStore(store, 5, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
+	app.Use(middleware.ThrottleWithStorage(store, 5, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
 	app.Get("/test", func(c fiber.Ctx) error {
 		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "ok"})
 	})
@@ -206,7 +206,7 @@ func TestRateLimit_StoreFailOpen(t *testing.T) {
 func TestRateLimit_NilStoreOrZeroLimit(t *testing.T) {
 	// 1. nil store
 	app1 := fiber.New()
-	app1.Use(middleware.ThrottleWithStore(nil, 5, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
+	app1.Use(middleware.ThrottleWithStorage(nil, 5, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
 	app1.Get("/test", func(c fiber.Ctx) error {
 		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "ok"})
 	})
@@ -218,7 +218,7 @@ func TestRateLimit_NilStoreOrZeroLimit(t *testing.T) {
 	// 2. 0 limit
 	store := newMockRateLimitStore()
 	app2 := fiber.New()
-	app2.Use(middleware.ThrottleWithStore(store, 0, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
+	app2.Use(middleware.ThrottleWithStorage(store, 0, time.Minute, middleware.WithThrottleTier(middleware.TierAnonymous)))
 	app2.Get("/test", func(c fiber.Ctx) error {
 		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "ok"})
 	})
@@ -241,7 +241,7 @@ func TestRateLimit_AuthenticatedScope(t *testing.T) {
 		c.SetContext(ctx)
 		return c.Next()
 	})
-	app.Use(middleware.ThrottleWithStore(store, 10, time.Minute, middleware.WithThrottleTier(middleware.TierAuthenticated)))
+	app.Use(middleware.ThrottleWithStorage(store, 10, time.Minute, middleware.WithThrottleTier(middleware.TierAuthenticated)))
 	app.Get("/test", func(c fiber.Ctx) error {
 		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "ok"})
 	})
@@ -261,7 +261,7 @@ func TestThrottle_CustomWindow(t *testing.T) {
 	store := newMockRateLimitStore()
 
 	app := fiber.New()
-	app.Use(middleware.ThrottleWithStore(store, 3, 10*time.Second))
+	app.Use(middleware.ThrottleWithStorage(store, 3, 10*time.Second))
 	app.Get("/hourly", func(c fiber.Ctx) error {
 		return c.Status(http.StatusOK).JSON(fiber.Map{"status": "ok"})
 	})
@@ -282,7 +282,7 @@ func TestThrottle_CustomKey(t *testing.T) {
 	store := newMockRateLimitStore()
 
 	app := fiber.New()
-	app.Use(middleware.ThrottleWithStore(
+	app.Use(middleware.ThrottleWithStorage(
 		store,
 		5,
 		time.Minute,
@@ -314,7 +314,7 @@ func TestThrottle_Tier(t *testing.T) {
 			Sensitive: 5,
 		},
 	})
-	m.SetLimiterStore(store)
+	m.SetLimiterStorage(store)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
@@ -336,7 +336,7 @@ func TestThrottle_ThrottleRate(t *testing.T) {
 	store := newMockRateLimitStore()
 
 	m := middleware.New(middleware.Deps{})
-	m.SetLimiterStore(store)
+	m.SetLimiterStorage(store)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),
@@ -373,7 +373,7 @@ func TestThrottle_CustomResponse(t *testing.T) {
 	store := newMockRateLimitStore()
 
 	m := middleware.New(middleware.Deps{})
-	m.SetLimiterStore(store)
+	m.SetLimiterStorage(store)
 
 	customOpt := middleware.WithThrottleResponse(func(c fiber.Ctx) error {
 		return c.Status(http.StatusTooManyRequests).JSON(fiber.Map{"custom_error": "please_wait"})
@@ -415,7 +415,7 @@ func TestThrottle_DisabledGlobally(t *testing.T) {
 			Authenticated: 1,
 		},
 	})
-	m.SetLimiterStore(store)
+	m.SetLimiterStorage(store)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.New(global.Deps{}).ErrorHandler(),

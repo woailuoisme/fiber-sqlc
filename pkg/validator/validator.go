@@ -90,9 +90,6 @@ func (v *Validator) Validate(out any) error {
 	return v.ValidateStruct(out)
 }
 
-// Install 是向后兼容占位，Fiber v3 直接将 Validator 注入 fiber.Config.StructValidator。
-func (v *Validator) Install() {}
-
 // Engine 返回底层 *govalidator.Validate 实例。
 func (v *Validator) Engine() *govalidator.Validate {
 	if v == nil {

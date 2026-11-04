@@ -1,10 +1,8 @@
 package middleware
 
 import (
-	"cmp"
 	"context"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -15,126 +13,100 @@ import (
 	"cfiber/pkg/logger"
 )
 
-// Tier 定义业务限流预设档位。
+// Tier 表示限流配额档位（对应 api.md §8）。
 type Tier string
 
 const (
-	// TierAnonymous 面向未认证客户端，按客户端 IP 计数。
-	TierAnonymous Tier = "anonymous"
-	// TierAuthenticated 面向已认证用户，按用户 ID 计数。
-	TierAuthenticated Tier = "authenticated"
-	// TierSensitive 面向敏感认证端点，按客户端 IP 计数且配额最严。
+	// TierSensitive 适用于登录、注册、重置密码等高风险认证端点。
 	TierSensitive Tier = "sensitive"
-
-	rateLimitWindow = time.Minute
+	// TierAnonymous 适用于公开免鉴权接口（按客户端 IP 隔离）。
+	TierAnonymous Tier = "anonymous"
+	// TierAuthenticated 适用于已认证业务接口（优先按 UserID 隔离，未认证回退 IP）。
+	TierAuthenticated Tier = "authenticated"
 )
 
-// ThrottleOption 定义自定义限流选项。
-type ThrottleOption func(*throttleOptions)
-
-type throttleOptions struct {
-	keyFunc  func(c fiber.Ctx) string
-	tier     Tier
-	response func(c fiber.Ctx) error
+type throttleConfig struct {
+	tier       Tier
+	customKey  func(c fiber.Ctx) string
+	onRejected fiber.Handler
 }
 
-// WithThrottleKey 自定义限流区分维度（例如按指定 header 或复合 key）。
-func WithThrottleKey(fn func(c fiber.Ctx) string) ThrottleOption {
-	return func(o *throttleOptions) {
-		o.keyFunc = fn
-	}
-}
+// ThrottleOption 定制路由限流行为。
+type ThrottleOption func(*throttleConfig)
 
-// WithThrottleTier 指定所属业务档位（用于监控与日志分类）。
+// WithThrottleTier 指定限流所属业务档位。
 func WithThrottleTier(tier Tier) ThrottleOption {
-	return func(o *throttleOptions) {
-		o.tier = tier
-	}
+	return func(cfg *throttleConfig) { cfg.tier = tier }
 }
 
-// WithThrottleResponse 指定自定义限流触发时的响应拦截回调。
-func WithThrottleResponse(fn func(c fiber.Ctx) error) ThrottleOption {
-	return func(o *throttleOptions) {
-		o.response = fn
-	}
+// WithThrottleKey 自定义限流分区键提取函数。
+func WithThrottleKey(fn func(c fiber.Ctx) string) ThrottleOption {
+	return func(cfg *throttleConfig) { cfg.customKey = fn }
 }
 
-// Throttle 按档位预设配额执行平滑滑动窗口限流。
-func (m *Middleware) Throttle(tier Tier, opts ...ThrottleOption) fiber.Handler {
-	if m != nil && !m.limiter.IsEnabled() {
-		return passthrough()
-	}
-
-	opts = append([]ThrottleOption{WithThrottleTier(tier)}, opts...)
-	return ThrottleWithStorage(m.resolveLimiterStorage(), m.limitFor(tier), rateLimitWindow, opts...)
+// WithThrottleResponse 自定义触发 429 超限时的响应处理器。
+func WithThrottleResponse(handler fiber.Handler) ThrottleOption {
+	return func(cfg *throttleConfig) { cfg.onRejected = handler }
 }
 
-// ThrottleRate 按显式配额与时间周期执行平滑滑动窗口限流。
+// Throttle 按预设业务档位挂载 1 分钟滑动窗口限流中间件。
+func (m *Middleware) Throttle(tier Tier) fiber.Handler {
+	if !m.limiter.IsEnabled() {
+		return func(c fiber.Ctx) error { return c.Next() }
+	}
+	return ThrottleWithStorage(m.storage, m.tierLimit(tier), time.Minute, WithThrottleTier(tier))
+}
+
+// ThrottleRate 按自定义配额与时间窗口挂载滑动窗口限流中间件。
 func (m *Middleware) ThrottleRate(limit int, window time.Duration, opts ...ThrottleOption) fiber.Handler {
-	if m != nil && !m.limiter.IsEnabled() {
-		return passthrough()
+	if !m.limiter.IsEnabled() {
+		return func(c fiber.Ctx) error { return c.Next() }
 	}
-	return ThrottleWithStorage(m.resolveLimiterStorage(), limit, window, opts...)
+	return ThrottleWithStorage(m.storage, limit, window, opts...)
 }
 
-// passthrough 返回不做任何限流的空中间件。
-func passthrough() fiber.Handler {
-	return func(c fiber.Ctx) error { return c.Next() }
-}
-
-// resolveLimiterStorage 优先使用显式注入的存储，其次是默认 fiber.Storage。
-func (m *Middleware) resolveLimiterStorage() fiber.Storage {
-	if m == nil {
-		return nil
-	}
-	return m.storage
-}
-
-// ThrottleWithStore 为测试与向后兼容保留的别名。
-func ThrottleWithStore(storage fiber.Storage, limit int, window time.Duration, opts ...ThrottleOption) fiber.Handler {
-	return ThrottleWithStorage(storage, limit, window, opts...)
-}
-
-// ThrottleWithStorage 基于 Fiber v3 官方 limiter.SlidingWindow 构造平滑滑动窗口限流中间件。
+// ThrottleWithStorage 基于官方 fiber/v3/middleware/limiter (SlidingWindow + fiber.Storage) 构建限流中间件。
 func ThrottleWithStorage(storage fiber.Storage, limit int, window time.Duration, opts ...ThrottleOption) fiber.Handler {
-	if limit <= 0 {
-		return passthrough()
+	if storage == nil || limit <= 0 || window <= 0 {
+		return func(c fiber.Ctx) error { return c.Next() }
 	}
 
-	var options throttleOptions
+	cfg := &throttleConfig{}
 	for _, opt := range opts {
-		opt(&options)
-	}
-	if window <= 0 {
-		window = rateLimitWindow
-	}
-
-	tierName := throttleTierLabel(options.tier)
-
-	var effectiveStorage fiber.Storage
-	if storage != nil {
-		effectiveStorage = failOpenStorage{storage: storage}
+		if opt != nil {
+			opt(cfg)
+		}
 	}
 
-	cfg := limiter.Config{
-		Max:               limit,
-		Expiration:        window,
-		Storage:           effectiveStorage,
-		LimiterMiddleware: limiter.SlidingWindow{},
+	tierPrefix := string(cfg.tier)
+	if tierPrefix == "" {
+		tierPrefix = "custom"
+	}
+	limitStr := strconv.Itoa(limit)
+	retryAfterSec := strconv.Itoa(max(int(window.Seconds()), 1))
+
+	return limiter.New(limiter.Config{
+		Max:                   limit,
+		Expiration:            window,
+		LimiterMiddleware:     limiter.SlidingWindow{},
+		Storage:               failOpenStorage{storage: storage},
+		DisableValueRedaction: true,
 		KeyGenerator: func(c fiber.Ctx) string {
-			scope := resolveThrottleScope(c, options)
-			return "ratelimit:" + tierName + ":" + scope
+			return "ratelimit:" + tierPrefix + ":" + resolveScope(c, cfg)
 		},
 		LimitReached: func(c fiber.Ctx) error {
-			scope := resolveThrottleScope(c, options)
-			c.Set("X-RateLimit-Limit", strconv.Itoa(limit))
+			scope := resolveScope(c, cfg)
+			c.Set("X-RateLimit-Limit", limitStr)
 			c.Set("X-RateLimit-Remaining", "0")
 			if reset := c.GetRespHeader(fiber.HeaderRetryAfter); reset != "" {
 				c.Set("X-RateLimit-Reset", reset)
+			} else {
+				c.Set(fiber.HeaderRetryAfter, retryAfterSec)
+				c.Set("X-RateLimit-Reset", retryAfterSec)
 			}
 
 			logger.FromContext(c.Context()).Warn().
-				Str("tier", tierName).
+				Str("tier", tierPrefix).
 				Str("scope", scope).
 				Int("limit", limit).
 				Str("path", c.Path()).
@@ -142,52 +114,45 @@ func ThrottleWithStorage(storage fiber.Storage, limit int, window time.Duration,
 				Str("ip", c.IP()).
 				Msg("rate limit exceeded")
 
-			if options.response != nil {
-				return options.response(c)
+			if cfg.onRejected != nil {
+				return cfg.onRejected(c)
 			}
 			return errs.RateLimited("Too many requests")
 		},
-	}
-
-	return limiter.New(cfg)
+	})
 }
 
-// resolveThrottleScope 解析限流区分维度：自定义键优先，其次业务档位，最后默认维度。
-func resolveThrottleScope(c fiber.Ctx, options throttleOptions) string {
-	switch {
-	case options.keyFunc != nil:
-		return options.keyFunc(c)
-	case options.tier != "":
-		return scopeKey(options.tier, c)
-	default:
-		return defaultScopeKey(c)
-	}
-}
-
-// throttleTierLabel 返回日志用的档位名称，自定义限流记为 custom。
-func throttleTierLabel(tier Tier) string {
-	if tier == "" {
-		return "custom"
-	}
-	return string(tier)
-}
-
-// scopeKey 根据档位语义决定隔离维度。
-func scopeKey(tier Tier, c fiber.Ctx) string {
+func (m *Middleware) tierLimit(tier Tier) int {
 	switch tier {
+	case TierSensitive:
+		return m.limiter.Sensitive
+	case TierAnonymous:
+		return m.limiter.Anonymous
 	case TierAuthenticated:
-		if identity, ok := authentication.FromContext(c.Context()); ok && identity.UserID != "" {
-			return "user:" + identity.UserID
-		}
-		return defaultScopeKey(c)
-	case TierAnonymous, TierSensitive:
-		return defaultScopeKey(c)
+		return m.limiter.Authenticated
 	default:
-		return defaultScopeKey(c)
+		return m.limiter.Anonymous
 	}
 }
 
-// failOpenStorage 对底层存储的异常进行兜底，确保缓存或网络抖动时不阻塞正常请求。
+func resolveScope(c fiber.Ctx, cfg *throttleConfig) string {
+	if cfg.customKey != nil {
+		if key := cfg.customKey(c); key != "" {
+			return key
+		}
+	}
+	if cfg.tier == TierAuthenticated {
+		if id, ok := authentication.FromContext(c.Context()); ok && id.UserID != "" {
+			return "user:" + id.UserID
+		}
+	}
+	if ip := c.IP(); ip != "" {
+		return "ip:" + ip
+	}
+	return "ip:unknown"
+}
+
+// failOpenStorage 对底层存储异常执行 fail-open 降级，避免存储抖动阻断正常业务流量。
 type failOpenStorage struct {
 	storage fiber.Storage
 }
@@ -195,7 +160,7 @@ type failOpenStorage struct {
 func (s failOpenStorage) Get(key string) ([]byte, error) {
 	val, err := s.storage.Get(key)
 	if err != nil {
-		return nil, nil //nolint:nilerr // fail-open on storage error to avoid dropping traffic
+		return nil, nil //nolint:nilerr // fail-open on storage error
 	}
 	return val, nil
 }
@@ -203,7 +168,7 @@ func (s failOpenStorage) Get(key string) ([]byte, error) {
 func (s failOpenStorage) GetWithContext(ctx context.Context, key string) ([]byte, error) {
 	val, err := s.storage.GetWithContext(ctx, key)
 	if err != nil {
-		return nil, nil //nolint:nilerr // fail-open on storage error to avoid dropping traffic
+		return nil, nil //nolint:nilerr // fail-open on storage error
 	}
 	return val, nil
 }
@@ -236,22 +201,4 @@ func (s failOpenStorage) ResetWithContext(ctx context.Context) error {
 
 func (s failOpenStorage) Close() error {
 	return s.storage.Close()
-}
-
-// defaultScopeKey 默认按客户端真实 IP 隔离。
-func defaultScopeKey(c fiber.Ctx) string {
-	ip := strings.TrimSpace(c.IP())
-	return "ip:" + cmp.Or(ip, "unknown")
-}
-
-// limitFor 按档位读取配额，未知档位回退至未认证配额。
-func (m *Middleware) limitFor(tier Tier) int {
-	switch tier {
-	case TierAuthenticated:
-		return m.limiter.Authenticated
-	case TierSensitive:
-		return m.limiter.Sensitive
-	default:
-		return m.limiter.Anonymous
-	}
 }

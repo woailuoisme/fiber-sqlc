@@ -21,12 +21,11 @@ import (
 	"cfiber/internal/route"
 	"cfiber/internal/service"
 	"cfiber/pkg/logger"
-	platformPayment "cfiber/pkg/payment"
-	"cfiber/pkg/payment/enum"
+	"cfiber/pkg/payment"
 )
 
 // setupPaymentTest 构造测试用的 Fiber 应用、服务实例与 Fake 支付管理器。
-func setupPaymentTest(t *testing.T) (*fiber.App, *service.PaymentService, *platformPayment.Manager) {
+func setupPaymentTest(t *testing.T) (*fiber.App, *service.PaymentService, *payment.Manager) {
 	t.Helper()
 
 	cfg := &config.Config{
@@ -40,7 +39,7 @@ func setupPaymentTest(t *testing.T) (*fiber.App, *service.PaymentService, *platf
 		},
 	}
 
-	mgr, err := platformPayment.NewManager(cfg, logger.Nop())
+	mgr, err := payment.NewManager(cfg.Payment, logger.Nop())
 	require.NoError(t, err)
 
 	svc := service.NewPaymentService(mgr, nil, cfg, nil)
@@ -72,11 +71,11 @@ func testRequest(t *testing.T, app *fiber.App, req *http.Request) *httptest.Resp
 }
 
 // getFakeProvider 从管理器中提取指定渠道的 Fake Provider。
-func getFakeProvider(t *testing.T, mgr *platformPayment.Manager, channel enum.PaymentChannel) *platformPayment.FakeProvider {
+func getFakeProvider(t *testing.T, mgr *payment.Manager, channel payment.Channel) *payment.FakeProvider {
 	t.Helper()
-	provider, err := mgr.For(channel, platformPayment.FakeApplicationKey)
+	provider, err := mgr.For(channel, payment.FakeApplicationKey)
 	require.NoError(t, err)
-	fakeProvider, ok := provider.(*platformPayment.FakeProvider)
+	fakeProvider, ok := provider.(*payment.FakeProvider)
 	require.True(t, ok)
 	return fakeProvider
 }
@@ -86,46 +85,46 @@ type failingCallbackHandler struct {
 	err error
 }
 
-func (f *failingCallbackHandler) OnPaymentSuccess(_ context.Context, _ *platformPayment.PaymentResult) error {
+func (f *failingCallbackHandler) OnPaymentSuccess(_ context.Context, _ *payment.PaymentResult) error {
 	return f.err
 }
 
-func (f *failingCallbackHandler) OnRefundSuccess(_ context.Context, _ *platformPayment.RefundResult) error {
+func (f *failingCallbackHandler) OnRefundSuccess(_ context.Context, _ *payment.RefundResult) error {
 	return f.err
 }
 
 // recordingCallbackHandler 记录被回调事件的业务处理器。
 type recordingCallbackHandler struct {
-	payments []*platformPayment.PaymentResult
-	refunds  []*platformPayment.RefundResult
+	payments []*payment.PaymentResult
+	refunds  []*payment.RefundResult
 }
 
-func (r *recordingCallbackHandler) OnPaymentSuccess(_ context.Context, res *platformPayment.PaymentResult) error {
+func (r *recordingCallbackHandler) OnPaymentSuccess(_ context.Context, res *payment.PaymentResult) error {
 	r.payments = append(r.payments, res)
 	return nil
 }
 
-func (r *recordingCallbackHandler) OnRefundSuccess(_ context.Context, res *platformPayment.RefundResult) error {
+func (r *recordingCallbackHandler) OnRefundSuccess(_ context.Context, res *payment.RefundResult) error {
 	r.refunds = append(r.refunds, res)
 	return nil
 }
 
 func TestHandleNotification_WechatPaymentSuccess(t *testing.T) {
 	app, svc, mgr := setupPaymentTest(t)
-	fake := getFakeProvider(t, mgr, enum.PaymentChannelWechat)
+	fake := getFakeProvider(t, mgr, payment.ChannelWechat)
 
 	recorder := &recordingCallbackHandler{}
 	svc.SetCallbackHandler(recorder)
 
 	// 预先入队微信支付成功通知
-	fake.QueueNotification(&platformPayment.Notification{
+	fake.QueueNotification(&payment.Notification{
 		ID:   "NOTIFY_WX_001",
-		Kind: enum.PaymentNotificationKindPayment,
-		Payment: &platformPayment.PaymentResult{
+		Kind: payment.NotificationKindPayment,
+		Payment: &payment.PaymentResult{
 			OutTradeNo:     "ORDER_WX_001",
 			ChannelTradeNo: "WX_TX_12345678",
 			PaidAmount:     8800,
-			Status:         enum.PaymentStatusSucceeded,
+			Status:         payment.StatusSucceeded,
 		},
 	})
 
@@ -149,21 +148,21 @@ func TestHandleNotification_WechatPaymentSuccess(t *testing.T) {
 
 func TestHandleNotification_WechatRefundSuccess(t *testing.T) {
 	app, svc, mgr := setupPaymentTest(t)
-	fake := getFakeProvider(t, mgr, enum.PaymentChannelWechat)
+	fake := getFakeProvider(t, mgr, payment.ChannelWechat)
 
 	recorder := &recordingCallbackHandler{}
 	svc.SetCallbackHandler(recorder)
 
 	// 预先入队微信退款成功通知
-	fake.QueueNotification(&platformPayment.Notification{
+	fake.QueueNotification(&payment.Notification{
 		ID:   "NOTIFY_WX_REFUND_001",
-		Kind: enum.PaymentNotificationKindRefund,
-		Refund: &platformPayment.RefundResult{
+		Kind: payment.NotificationKindRefund,
+		Refund: &payment.RefundResult{
 			OutTradeNo:      "ORDER_WX_001",
 			OutRefundNo:     "REF_WX_001",
 			ChannelRefundNo: "WX_REF_987654",
 			RefundAmount:    8800,
-			Status:          enum.PaymentRefundStatusSucceeded,
+			Status:          payment.RefundStatusSucceeded,
 		},
 	})
 
@@ -185,20 +184,20 @@ func TestHandleNotification_WechatRefundSuccess(t *testing.T) {
 
 func TestHandleNotification_AlipayPaymentSuccess(t *testing.T) {
 	app, svc, mgr := setupPaymentTest(t)
-	fake := getFakeProvider(t, mgr, enum.PaymentChannelAlipay)
+	fake := getFakeProvider(t, mgr, payment.ChannelAlipay)
 
 	recorder := &recordingCallbackHandler{}
 	svc.SetCallbackHandler(recorder)
 
 	// 预先入队支付宝支付通知
-	fake.QueueNotification(&platformPayment.Notification{
+	fake.QueueNotification(&payment.Notification{
 		ID:   "NOTIFY_ALI_001",
-		Kind: enum.PaymentNotificationKindPayment,
-		Payment: &platformPayment.PaymentResult{
+		Kind: payment.NotificationKindPayment,
+		Payment: &payment.PaymentResult{
 			OutTradeNo:     "ORDER_ALI_001",
 			ChannelTradeNo: "ALI_TRADE_888888",
 			PaidAmount:     12800,
-			Status:         enum.PaymentStatusSucceeded,
+			Status:         payment.StatusSucceeded,
 		},
 	})
 
@@ -222,14 +221,14 @@ func TestHandleNotification_CustomAppKey(t *testing.T) {
 	app, svc, mgr := setupPaymentTest(t)
 	// 默认回调处理器会失败关闭（未接线业务时不得回执成功），本用例聚焦 app 参数路由，故注入记录器。
 	svc.SetCallbackHandler(&recordingCallbackHandler{})
-	fake := getFakeProvider(t, mgr, enum.PaymentChannelWechat)
+	fake := getFakeProvider(t, mgr, payment.ChannelWechat)
 
-	fake.QueueNotification(&platformPayment.Notification{
+	fake.QueueNotification(&payment.Notification{
 		ID:   "NOTIFY_WX_APP_001",
-		Kind: enum.PaymentNotificationKindPayment,
-		Payment: &platformPayment.PaymentResult{
+		Kind: payment.NotificationKindPayment,
+		Payment: &payment.PaymentResult{
 			OutTradeNo: "ORDER_WX_APP_001",
-			Status:     enum.PaymentStatusSucceeded,
+			Status:     payment.StatusSucceeded,
 		},
 	})
 
@@ -249,17 +248,17 @@ func TestHandleNotification_CustomAppKey(t *testing.T) {
 func TestHandleNotification_BusinessFailure_TriggersRetry(t *testing.T) {
 	t.Run("微信业务消费报错返回FAIL应答", func(t *testing.T) {
 		app, svc, mgr := setupPaymentTest(t)
-		fake := getFakeProvider(t, mgr, enum.PaymentChannelWechat)
+		fake := getFakeProvider(t, mgr, payment.ChannelWechat)
 
 		// 注入业务处理失败
 		svc.SetCallbackHandler(&failingCallbackHandler{err: errors.New("database deadlock on order state update")})
 
-		fake.QueueNotification(&platformPayment.Notification{
+		fake.QueueNotification(&payment.Notification{
 			ID:   "NOTIFY_WX_FAIL",
-			Kind: enum.PaymentNotificationKindPayment,
-			Payment: &platformPayment.PaymentResult{
+			Kind: payment.NotificationKindPayment,
+			Payment: &payment.PaymentResult{
 				OutTradeNo: "ORDER_WX_FAIL",
-				Status:     enum.PaymentStatusSucceeded,
+				Status:     payment.StatusSucceeded,
 			},
 		})
 
@@ -278,16 +277,16 @@ func TestHandleNotification_BusinessFailure_TriggersRetry(t *testing.T) {
 
 	t.Run("支付宝业务消费报错返回fail应答", func(t *testing.T) {
 		app, svc, mgr := setupPaymentTest(t)
-		fake := getFakeProvider(t, mgr, enum.PaymentChannelAlipay)
+		fake := getFakeProvider(t, mgr, payment.ChannelAlipay)
 
 		svc.SetCallbackHandler(&failingCallbackHandler{err: errors.New("external inventory deduction failed")})
 
-		fake.QueueNotification(&platformPayment.Notification{
+		fake.QueueNotification(&payment.Notification{
 			ID:   "NOTIFY_ALI_FAIL",
-			Kind: enum.PaymentNotificationKindPayment,
-			Payment: &platformPayment.PaymentResult{
+			Kind: payment.NotificationKindPayment,
+			Payment: &payment.PaymentResult{
 				OutTradeNo: "ORDER_ALI_FAIL",
-				Status:     enum.PaymentStatusSucceeded,
+				Status:     payment.StatusSucceeded,
 			},
 		})
 
@@ -336,14 +335,14 @@ func TestHandleNotification_VerifySignatureFailure(t *testing.T) {
 
 func TestHandleAlipayReturn_Success(t *testing.T) {
 	app, _, mgr := setupPaymentTest(t)
-	fake := getFakeProvider(t, mgr, enum.PaymentChannelAlipay)
+	fake := getFakeProvider(t, mgr, payment.ChannelAlipay)
 
-	fake.QueueNotification(&platformPayment.Notification{
+	fake.QueueNotification(&payment.Notification{
 		ID:   "RETURN_ALI_001",
-		Kind: enum.PaymentNotificationKindPayment,
-		Payment: &platformPayment.PaymentResult{
+		Kind: payment.NotificationKindPayment,
+		Payment: &payment.PaymentResult{
 			OutTradeNo: "ORDER_ALI_RETURN_001",
-			Status:     enum.PaymentStatusSucceeded,
+			Status:     payment.StatusSucceeded,
 		},
 	})
 

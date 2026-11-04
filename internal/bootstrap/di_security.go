@@ -25,7 +25,7 @@ type AuthGuards struct {
 	Admin  *platformauth.Guard[*sqlc.User]
 }
 
-// SecurityPackage 声明认证令牌、用户仓储、权限守卫与安全中间件。
+// SecurityPackage 声明认证令牌、用户领域服务、权限守卫与安全中间件。
 var SecurityPackage = do.Package(
 	// 1. JWT 双令牌签发器
 	do.Lazy(func(i do.Injector) (*platformauth.TokenIssuer, error) {
@@ -34,33 +34,26 @@ var SecurityPackage = do.Package(
 		return platformauth.NewTokenIssuer(cfg.JWT, c), nil
 	}),
 
-	// 2. 用户认证凭据提供者
-	do.Lazy(func(i do.Injector) (*user.Provider, error) {
-		db := do.MustInvoke[*database.DB](i)
-		h := do.MustInvoke[hasher.PasswordHasher](i)
-		return user.MustNewProvider(db, h), nil
-	}),
-
-	// 3. 用户领域内核服务
+	// 2. 用户领域内核服务（统一提供账号读写、本地口令凭据与 UserProvider 契约）
 	do.Lazy(func(i do.Injector) (*user.Service, error) {
 		db := do.MustInvoke[*database.DB](i)
 		h := do.MustInvoke[hasher.PasswordHasher](i)
 		return user.MustNewService(db, h), nil
 	}),
 
-	// 4. 双通道认证守卫（客户端与管理端）
+	// 3. 双通道认证守卫（客户端与管理端）
 	do.Lazy(func(i do.Injector) (AuthGuards, error) {
 		cfg := do.MustInvoke[*config.Config](i)
 		tokens := do.MustInvoke[*platformauth.TokenIssuer](i)
-		userProvider := do.MustInvoke[*user.Provider](i)
+		userService := do.MustInvoke[*user.Service](i)
 
 		clientGuard := platformauth.NewGuard(
 			tokens,
-			userProvider,
+			userService,
 			user.ClientPolicy{RequireEmailVerification: cfg.Auth.RequireEmailVerification},
-			userProvider.Identity,
+			userService.Identity,
 		)
-		adminGuard := platformauth.NewGuard(tokens, userProvider, user.AdminPolicy{}, userProvider.Identity)
+		adminGuard := platformauth.NewGuard(tokens, userService, user.AdminPolicy{}, userService.Identity)
 
 		return AuthGuards{
 			Client: clientGuard,
@@ -68,7 +61,7 @@ var SecurityPackage = do.Package(
 		}, nil
 	}),
 
-	// 5. 认证管理器
+	// 4. 认证管理器
 	do.Lazy(func(i do.Injector) (*platformauth.Manager, error) {
 		guards := do.MustInvoke[AuthGuards](i)
 		return platformauth.NewManager().
@@ -77,7 +70,7 @@ var SecurityPackage = do.Package(
 			SetDefault("client"), nil
 	}),
 
-	// 6. 全局传输层中间件
+	// 5. 全局传输层中间件
 	do.Lazy(func(i do.Injector) (*global.Middleware, error) {
 		cfg := do.MustInvoke[*config.Config](i)
 		c := do.MustInvoke[cache.Store](i)
@@ -99,23 +92,20 @@ var SecurityPackage = do.Package(
 		}), nil
 	}),
 
-	// 7. 路由级传输层中间件
+	// 6. 路由级传输层中间件
 	do.Lazy(func(i do.Injector) (*middleware.Middleware, error) {
 		cfg := do.MustInvoke[*config.Config](i)
 		authManager := do.MustInvoke[*platformauth.Manager](i)
-		c := do.MustInvoke[cache.Store](i)
 		storage := do.MustInvoke[fiber.Storage](i)
 		enforcer := do.MustInvoke[*authorization.Enforcer](i)
 		log := do.MustInvoke[*zerolog.Logger](i)
 
 		return middleware.New(middleware.Deps{
 			AuthManager: authManager,
-			Cache:       c,
 			Storage:     storage,
 			Authz:       enforcer,
 			Logger:      log,
 			Limiter:     cfg.Limiter,
-			SigningKey:  cfg.JWT.Secret,
 		}), nil
 	}),
 )

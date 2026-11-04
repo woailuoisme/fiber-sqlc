@@ -18,7 +18,7 @@ import (
 
 // TestI18nMiddleware_NegotiationAndMessages 验证多语言协商与上下文注入。
 func TestI18nMiddleware_NegotiationAndMessages(t *testing.T) {
-	translator, err := i18n.New(&config.Config{I18n: config.I18nConfig{DefaultLanguage: "en"}})
+	translator, err := i18n.New(config.I18nConfig{DefaultLanguage: "en"})
 	require.NoError(t, err)
 
 	m := global.New(global.Deps{
@@ -62,7 +62,7 @@ func TestI18nMiddleware_NegotiationAndMessages(t *testing.T) {
 
 // TestI18nMiddleware_MatchesTranslatorOutput 锁定 HTTP 中间件与 pkg/i18n 的渲染结果一致。
 func TestI18nMiddleware_MatchesTranslatorOutput(t *testing.T) {
-	translator, err := i18n.New(&config.Config{I18n: config.I18nConfig{DefaultLanguage: "en"}})
+	translator, err := i18n.New(config.I18nConfig{DefaultLanguage: "en"})
 	require.NoError(t, err)
 
 	m := global.New(global.Deps{Translator: translator})

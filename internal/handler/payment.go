@@ -8,19 +8,18 @@ import (
 	"cfiber/internal/service"
 	"cfiber/pkg/errs"
 	"cfiber/pkg/logger"
-	platformPayment "cfiber/pkg/payment"
-	"cfiber/pkg/payment/enum"
+	"cfiber/pkg/payment"
 )
 
 // PaymentHandler 承接支付渠道的 Webhook 异步通知与客户端同步跳转。
 type PaymentHandler struct {
 	svc     *service.PaymentService
-	gateway platformPayment.Gateway
+	gateway payment.Gateway
 }
 
 // NewPaymentHandler 构造支付回调 HTTP 处理器，网关自 svc 取得，无需重复注入。
 func NewPaymentHandler(svc *service.PaymentService) *PaymentHandler {
-	var gw platformPayment.Gateway
+	var gw payment.Gateway
 	if svc != nil {
 		gw = svc.Gateway()
 	}
@@ -45,7 +44,7 @@ func (h *PaymentHandler) HandleNotification(c fiber.Ctx) error {
 		return err
 	}
 
-	channel := enum.PaymentChannel(pathParams.Channel)
+	channel := payment.Channel(pathParams.Channel)
 	if !channel.IsValid() {
 		// 报文里不拼接调用方原始输入，渠道值只进结构化日志。
 		logger.FromContext(c.Context()).Warn().
@@ -55,7 +54,7 @@ func (h *PaymentHandler) HandleNotification(c fiber.Ctx) error {
 	}
 
 	if h.gateway == nil {
-		return replyAck(c, platformPayment.FailureAck(channel))
+		return replyAck(c, payment.FailureAck(channel))
 	}
 
 	httpReq, err := adaptor.ConvertRequest(c, true)
@@ -72,7 +71,7 @@ func (h *PaymentHandler) HandleNotification(c fiber.Ctx) error {
 			Str("app_key", pathParams.App).
 			Msg("payment callback verification or parsing failed")
 
-		return replyAck(c, platformPayment.FailureAck(channel))
+		return replyAck(c, payment.FailureAck(channel))
 	}
 
 	// 2. 将解析好的纯领域通知交给 Service 协调幂等控制与事件分发
@@ -109,7 +108,7 @@ func (h *PaymentHandler) HandleAlipayReturn(c fiber.Ctx) error {
 	}
 
 	// 对 URL Query 参数进行支付宝公钥验签
-	notification, err := h.gateway.ParseNotification(ctx, enum.PaymentChannelAlipay, "", httpReq)
+	notification, err := h.gateway.ParseNotification(ctx, payment.ChannelAlipay, "", httpReq)
 	if err != nil {
 		log.Warn().Err(err).Msg("alipay return verification failed, redirecting to order failure page")
 		return c.Redirect().Status(fiber.StatusFound).To(h.svc.FailureRedirectURL())
@@ -133,7 +132,7 @@ func (h *PaymentHandler) HandleAlipayReturn(c fiber.Ctx) error {
 }
 
 // replyAck 将渠道应答报文写回 HTTP 响应。
-func replyAck(c fiber.Ctx, ack platformPayment.NotificationAck) error {
+func replyAck(c fiber.Ctx, ack payment.NotificationAck) error {
 	c.Set(fiber.HeaderContentType, ack.ContentType)
 	return c.Status(fiber.StatusOK).Send([]byte(ack.Body))
 }

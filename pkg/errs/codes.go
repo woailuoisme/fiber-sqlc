@@ -100,9 +100,6 @@ const (
 
 	// 以下为内部失败码：不登记进 statuses，对外统一 500，仅用于堆栈与日志定位。
 	CodeStorageFailed            Code = "STORAGE_FAILED"
-	CodeCSVWriteError            Code = "CSV_WRITE_ERROR"
-	CodeCSVFlushError            Code = "CSV_FLUSH_ERROR"
-	CodeCSVGeneratorError        Code = "CSV_GENERATOR_ERROR"
 	CodeExcelStreamError         Code = "EXCEL_STREAM_ERROR"
 	CodeExcelStreamWriteError    Code = "EXCEL_STREAM_WRITE_ERROR"
 	CodeExcelFlushError          Code = "EXCEL_FLUSH_ERROR"
@@ -274,7 +271,7 @@ func domain(c Code) string {
 	switch {
 	case strings.HasPrefix(s, "AUTH_"):
 		return "auth"
-	case strings.HasPrefix(s, "EXCEL_"), strings.HasPrefix(s, "CSV_"), c == CodeEmptySheets:
+	case strings.HasPrefix(s, "EXCEL_"), c == CodeEmptySheets:
 		return "excel"
 	case strings.HasPrefix(s, "NOTIFICATION_"):
 		return "notification"

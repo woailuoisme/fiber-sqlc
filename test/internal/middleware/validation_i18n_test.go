@@ -21,7 +21,7 @@ import (
 // TestValidationMessageTranslation 验证以语言包键表达的字段级校验文案，
 // 会在渲染边界按 Accept-Language 翻译，而不是把英文提示硬编码在业务代码里。
 func TestValidationMessageTranslation(t *testing.T) {
-	translator, err := i18n.New(&config.Config{I18n: config.I18nConfig{DefaultLanguage: "en"}})
+	translator, err := i18n.New(config.I18nConfig{DefaultLanguage: "en"})
 	require.NoError(t, err)
 
 	cases := []struct {

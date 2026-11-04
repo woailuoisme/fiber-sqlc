@@ -23,16 +23,6 @@ import (
 	"cfiber/pkg/validator"
 )
 
-func init() {
-	// 本包通过 gin 绑定驱动 DTO，需要在校验器安装后才能跑：
-	// 规则由模块显式贡献，构造后挂载一次。
-	v, err := validator.New()
-	if err != nil {
-		panic(err)
-	}
-	v.Install()
-}
-
 const testJWTSecret = "0123456789abcdef0123456789abcdef"
 
 // mockRepo 模拟管理员认证数据仓储。

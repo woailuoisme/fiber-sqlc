@@ -28,13 +28,12 @@ import (
 // 所有用例通过同一个只读实例验证行为。
 var testValidator *validator.Validator
 
-// TestMain 构造并安装校验器，供依赖绑定的用例使用。
+// TestMain 构造校验器，供依赖绑定的用例使用。
 func TestMain(m *testing.M) {
 	v, err := validator.New(validator.WithOmitNullTypes(omitnull.Val[testRoleType]{}))
 	if err != nil {
 		panic(err)
 	}
-	v.Install()
 	testValidator = v
 
 	os.Exit(m.Run())
@@ -63,9 +62,7 @@ type numericProbe struct {
 func newTranslator(t *testing.T, defaultLanguage string) i18n.Translator {
 	t.Helper()
 
-	translator, err := i18n.New(&config.Config{
-		I18n: config.I18nConfig{DefaultLanguage: defaultLanguage},
-	})
+	translator, err := i18n.New(config.I18nConfig{DefaultLanguage: defaultLanguage})
 	require.NoError(t, err)
 	return translator
 }

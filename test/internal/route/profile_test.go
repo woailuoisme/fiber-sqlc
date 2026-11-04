@@ -27,14 +27,13 @@ import (
 
 var testValidator *validator.Validator
 
-// TestMain 安装校验器：本包通过 fiber 绑定驱动多部分表单与 JSON。
+// TestMain 构造校验器：本包通过 fiber 绑定驱动多部分表单与 JSON。
 func TestMain(m *testing.M) {
 	var err error
 	testValidator, err = validator.New()
 	if err != nil {
 		panic(err)
 	}
-	testValidator.Install()
 
 	os.Exit(m.Run())
 }
