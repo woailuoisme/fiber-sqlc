@@ -2,20 +2,20 @@ version: "0.5"
 
 processes:
   api:
-    command: "just dev-api"
+    command: "air"
     availability:
       restart: "always"
     readiness_probe:
       http_get:
         host: "127.0.0.1"
         port: 3300
-        path: "/healthz"
+        path: "/livez"
       initial_delay_seconds: 2
       period_seconds: 5
       timeout_seconds: 2
 
   worker:
-    command: "just dev-worker"
+    command: "air -c .air.worker.toml"
     availability:
       restart: "always"
 
