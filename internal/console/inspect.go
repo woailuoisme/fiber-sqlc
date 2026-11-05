@@ -23,7 +23,7 @@ import (
 
 	"cfiber/internal/bootstrap"
 	"cfiber/internal/config"
-	"cfiber/internal/index"
+	adminuser "cfiber/internal/feature/admin/user"
 	"cfiber/pkg/search"
 )
 
@@ -371,7 +371,7 @@ func newScoutImportCmd(f Factory) *cobra.Command {
 		Short: "Import model records into the search index",
 		Args:  maxArgs(1),
 		ValidArgsFunction: func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-			return index.Names(), cobra.ShellCompDirectiveNoFileComp
+			return adminuser.Names(), cobra.ShellCompDirectiveNoFileComp
 		},
 		RunE: runE(func(ctx context.Context, args []string) error {
 			model := firstArg(args)
@@ -393,7 +393,7 @@ func newScoutImportCmd(f Factory) *cobra.Command {
 			}
 
 			streams := f.IOStreams()
-			catalog := index.Catalog(db)
+			catalog := adminuser.Catalog(db)
 
 			var targets []search.ModelDescriptor
 			if all {
@@ -405,7 +405,7 @@ func newScoutImportCmd(f Factory) *cobra.Command {
 			} else {
 				desc, ok := catalog.Lookup(model)
 				if !ok {
-					return fmt.Errorf("model [%s] is not registered as searchable (available: %s)", model, strings.Join(index.Names(), ", "))
+					return fmt.Errorf("model [%s] is not registered as searchable (available: %s)", model, strings.Join(adminuser.Names(), ", "))
 				}
 				targets = []search.ModelDescriptor{desc}
 			}
@@ -433,7 +433,7 @@ func newScoutFlushCmd(f Factory) *cobra.Command {
 		Short: "Flush all of the model's records from the search index",
 		Args:  maxArgs(1),
 		ValidArgsFunction: func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-			return index.Names(), cobra.ShellCompDirectiveNoFileComp
+			return adminuser.Names(), cobra.ShellCompDirectiveNoFileComp
 		},
 		RunE: runE(func(ctx context.Context, args []string) error {
 			model := firstArg(args)
@@ -446,9 +446,9 @@ func newScoutFlushCmd(f Factory) *cobra.Command {
 				return err
 			}
 
-			desc, ok := index.Catalog(nil).Lookup(model)
+			desc, ok := adminuser.Catalog(nil).Lookup(model)
 			if !ok {
-				return fmt.Errorf("model [%s] is not registered as searchable (available: %s)", model, strings.Join(index.Names(), ", "))
+				return fmt.Errorf("model [%s] is not registered as searchable (available: %s)", model, strings.Join(adminuser.Names(), ", "))
 			}
 
 			if err := confirmOrCancel(

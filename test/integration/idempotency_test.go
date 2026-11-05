@@ -23,7 +23,8 @@ func openIdempotencyStorage(t *testing.T) fiber.Storage {
 	require.NoError(t, err, "加载配置失败")
 
 	storage := valkey.New(valkey.Config{
-		URL: cfg.Cache.URL,
+		URL:          cfg.Cache.URL,
+		DisableCache: true,
 	})
 	t.Cleanup(func() { _ = storage.Close() })
 	return storage

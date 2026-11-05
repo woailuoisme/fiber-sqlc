@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"cfiber/internal/bootstrap"
-	"cfiber/internal/job"
+	clientauth "cfiber/internal/feature/client/auth"
 	"cfiber/pkg/cache"
 	"cfiber/pkg/mailer"
 	"cfiber/pkg/queue"
@@ -78,7 +78,7 @@ func newQueueWorkCmd(f Factory) *cobra.Command {
 			defer func() { _ = mailerClient.Close() }()
 
 			router := queue.NewTaskRouter()
-			job.RegisterJobs(router, mailerClient)
+			clientauth.RegisterJobs(router, mailerClient)
 
 			var locker queue.Locker
 			if cacheLocker, err := cache.NewRedisLocker(cfg.Cache); err == nil {

@@ -27,9 +27,9 @@ import (
 	"golang.org/x/net/websocket"
 
 	"cfiber/internal/config"
-	"cfiber/internal/handler"
+	clientrealtime "cfiber/internal/feature/client/realtime"
+	realtimev1 "cfiber/internal/feature/client/realtime/v1"
 	"cfiber/internal/middleware/global"
-	"cfiber/internal/service"
 	platformRealtime "cfiber/pkg/realtime"
 )
 
@@ -284,12 +284,12 @@ func TestRealtime_ProxySubscribeCallbackContract(t *testing.T) {
 
 	appCfg := &config.Config{Realtime: cfg}
 	gw := platformRealtime.NewManager(&cfg, reg)
-	svc := service.NewRealtimeService(service.RealtimeDeps{
+	svc := clientrealtime.NewRealtimeService(clientrealtime.RealtimeDeps{
 		Gateway: gw,
 		Cfg:     appCfg,
 		Secret:  appCfg.Realtime.Secret,
 	})
-	handler := handler.NewRealtimeHandler(svc)
+	handler := realtimev1.NewHandler(svc)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.HandleError,

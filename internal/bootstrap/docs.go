@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cache"
 
-	"cfiber/shared/apidocs"
+	"cfiber/api"
 )
 
 // 文档页面与 OpenAPI 规范路由路径常量。
@@ -170,7 +170,7 @@ func serveClientReference(c fiber.Ctx) error {
 // serveClientReferenceSpec 原样返回编进二进制的客户端规范。
 func serveClientReferenceSpec(c fiber.Ctx) error {
 	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-	return c.Status(fiber.StatusOK).Send(apidocs.Spec)
+	return c.Status(fiber.StatusOK).Send(api.Spec)
 }
 
 // serveAdminReference 返回管理端 Scalar 的宿主页。
@@ -182,5 +182,5 @@ func serveAdminReference(c fiber.Ctx) error {
 // serveAdminReferenceSpec 原样返回编进二进制的管理端规范。
 func serveAdminReferenceSpec(c fiber.Ctx) error {
 	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-	return c.Status(fiber.StatusOK).Send(apidocs.AdminSpec)
+	return c.Status(fiber.StatusOK).Send(api.AdminSpec)
 }

@@ -14,7 +14,7 @@ import (
 
 	"cfiber/internal/config"
 	"cfiber/internal/database"
-	admindto "cfiber/internal/dto/admin"
+	useradminv1 "cfiber/internal/feature/admin/user/v1"
 	"cfiber/internal/user"
 	"cfiber/pkg/authorization"
 	"cfiber/pkg/cache"
@@ -98,10 +98,12 @@ var InfraPackage = do.Package(
 	}),
 
 	// 5.1 Fiber Storage 驱动绑定（用于 Session、Idempotency 等官方中间件）
+	// 关闭 Client-side cache，确保幂等键与会话状态实时强一致
 	do.Lazy(func(i do.Injector) (fiber.Storage, error) {
 		cfg := do.MustInvoke[*config.Config](i)
 		return valkey.New(valkey.Config{
-			URL: cfg.Cache.URL,
+			URL:          cfg.Cache.URL,
+			DisableCache: true,
 		}), nil
 	}),
 
@@ -151,7 +153,7 @@ var InfraPackage = do.Package(
 
 	// 10. 国际化参数校验器
 	do.Lazy(func(i do.Injector) (*validator.Validator, error) {
-		return validator.New(slices.Concat(user.ValidationOptions(), admindto.ValidationOptions())...)
+		return validator.New(slices.Concat(user.ValidationOptions(), useradminv1.ValidationOptions())...)
 	}),
 
 	// 11. 密码哈希器（统一绑定 PasswordHasher 契约）

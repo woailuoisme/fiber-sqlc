@@ -2,20 +2,21 @@ package {{ .HandlerPackage }}
 
 import (
 	"github.com/gofiber/fiber/v3"
+	"github.com/samber/lo"
 
-	"{{ .DTOImportPath }}"
-	"{{ .ServiceImportPath }}"
+	"cfiber/internal/database/sqlc"
+	{{ .ServicePackage }} "{{ .ServiceImportPath }}"
 	"cfiber/pkg/response"
 )
 
-// {{ .PascalName }}Handler 负责处理 {{ .ChineseName }} 相关的 HTTP 交互。
-type {{ .PascalName }}Handler struct {
+// Handler 负责处理 {{ .ChineseName }} 相关的 HTTP 交互。
+type Handler struct {
 	svc {{ .ServicePackage }}.{{ .PascalName }}Service
 }
 
-// New{{ .PascalName }}Handler 实例化 {{ .ChineseName }} 控制器。
-func New{{ .PascalName }}Handler(svc {{ .ServicePackage }}.{{ .PascalName }}Service) *{{ .PascalName }}Handler {
-	return &{{ .PascalName }}Handler{svc: svc}
+// NewHandler 实例化 {{ .ChineseName }} 控制器。
+func NewHandler(svc {{ .ServicePackage }}.{{ .PascalName }}Service) *Handler {
+	return &Handler{svc: svc}
 }
 
 // List 获取{{ .ChineseName }}分页列表
@@ -24,23 +25,26 @@ func New{{ .PascalName }}Handler(svc {{ .ServicePackage }}.{{ .PascalName }}Serv
 // @Tags         {{ .TagName }}
 // @Accept       json
 // @Produce      json
-// @Param        query query {{ .DTOPackage }}.List{{ .PascalName }}QueryParams false "分页查询条件"
-// @Success      200 {object} {{ .DTOPackage }}.{{ .PascalName }}PageResource "查询成功并返回分页列表"
+// @Param        query query List{{ .PascalName }}QueryParams false "分页查询条件"
+// @Success      200 {object} {{ .PascalName }}PageResource "查询成功并返回分页列表"
 // @x-order      1
 // @Router       {{ .RoutePath }} [get]
-func (h *{{ .PascalName }}Handler) List(c fiber.Ctx) error {
-	var query {{ .DTOPackage }}.List{{ .PascalName }}QueryParams
+func (h *Handler) List(c fiber.Ctx) error {
+	var query List{{ .PascalName }}QueryParams
 	if err := c.Bind().Query(&query); err != nil {
 		return err
 	}
 	query.Normalize()
 
-	items, meta, err := h.svc.List(c.Context(), query)
+	items, meta, err := h.svc.List(c.Context(), query.ToFilter())
 	if err != nil {
 		return err
 	}
 
-	return response.Paginated(c, items, meta)
+	resources := lo.Map(items, func(item sqlc.{{ .PascalName }}, _ int) {{ .PascalName }}Resource {
+		return To{{ .PascalName }}Resource(&item)
+	})
+	return response.Paginated(c, resources, meta)
 }
 
 // Create 创建{{ .ChineseName }}
@@ -49,23 +53,23 @@ func (h *{{ .PascalName }}Handler) List(c fiber.Ctx) error {
 // @Tags         {{ .TagName }}
 // @Accept       json
 // @Produce      json
-// @Param        payload body {{ .DTOPackage }}.Create{{ .PascalName }}Body true "创建数据载荷"
-// @Success      201 {object} {{ .DTOPackage }}.{{ .PascalName }}Resource "创建成功"
+// @Param        payload body Create{{ .PascalName }}Body true "创建数据载荷"
+// @Success      201 {object} {{ .PascalName }}Resource "创建成功"
 // @x-order      2
 // @Router       {{ .RoutePath }} [post]
-func (h *{{ .PascalName }}Handler) Create(c fiber.Ctx) error {
-	var body {{ .DTOPackage }}.Create{{ .PascalName }}Body
+func (h *Handler) Create(c fiber.Ctx) error {
+	var body Create{{ .PascalName }}Body
 	if err := c.Bind().JSON(&body); err != nil {
 		return err
 	}
 	body.Normalize()
 
-	res, err := h.svc.Create(c.Context(), body)
+	res, err := h.svc.Create(c.Context(), body.ToParams())
 	if err != nil {
 		return err
 	}
 
-	return response.Created(c, res)
+	return response.Created(c, To{{ .PascalName }}Resource(res))
 }
 
 // GetByID 获取{{ .ChineseName }}详情
@@ -75,11 +79,11 @@ func (h *{{ .PascalName }}Handler) Create(c fiber.Ctx) error {
 // @Accept       json
 // @Produce      json
 // @Param        id path string true "{{ .ChineseName }} ID"
-// @Success      200 {object} {{ .DTOPackage }}.{{ .PascalName }}Resource "获取成功"
+// @Success      200 {object} {{ .PascalName }}Resource "获取成功"
 // @x-order      3
 // @Router       {{ .RoutePath }}/{id} [get]
-func (h *{{ .PascalName }}Handler) GetByID(c fiber.Ctx) error {
-	var pathParams {{ .DTOPackage }}.{{ .PascalName }}PathParams
+func (h *Handler) GetByID(c fiber.Ctx) error {
+	var pathParams {{ .PascalName }}PathParams
 	if err := c.Bind().URI(&pathParams); err != nil {
 		return err
 	}
@@ -89,7 +93,7 @@ func (h *{{ .PascalName }}Handler) GetByID(c fiber.Ctx) error {
 		return err
 	}
 
-	return response.OK(c, res)
+	return response.OK(c, To{{ .PascalName }}Resource(res))
 }
 
 // Update 更新{{ .ChineseName }}
@@ -99,33 +103,33 @@ func (h *{{ .PascalName }}Handler) GetByID(c fiber.Ctx) error {
 // @Accept       json
 // @Produce      json
 // @Param        id path string true "{{ .ChineseName }} ID"
-// @Param        payload body {{ .DTOPackage }}.Update{{ .PascalName }}Body true "更新字段载荷"
-// @Success      200 {object} {{ .DTOPackage }}.{{ .PascalName }}Resource "更新成功"
+// @Param        payload body Update{{ .PascalName }}Body true "修改数据载荷"
+// @Success      200 {object} {{ .PascalName }}Resource "更新成功"
 // @x-order      4
 // @Router       {{ .RoutePath }}/{id} [patch]
-func (h *{{ .PascalName }}Handler) Update(c fiber.Ctx) error {
-	var pathParams {{ .DTOPackage }}.{{ .PascalName }}PathParams
+func (h *Handler) Update(c fiber.Ctx) error {
+	var pathParams {{ .PascalName }}PathParams
 	if err := c.Bind().URI(&pathParams); err != nil {
 		return err
 	}
 
-	var body {{ .DTOPackage }}.Update{{ .PascalName }}Body
+	var body Update{{ .PascalName }}Body
 	if err := c.Bind().JSON(&body); err != nil {
 		return err
 	}
 	body.Normalize()
 
-	res, err := h.svc.Update(c.Context(), pathParams.ID, body)
+	res, err := h.svc.Update(c.Context(), pathParams.ID, body.ToParams())
 	if err != nil {
 		return err
 	}
 
-	return response.OK(c, res)
+	return response.OK(c, To{{ .PascalName }}Resource(res))
 }
 
 // Delete 删除{{ .ChineseName }}
 // @Summary      删除{{ .ChineseName }}
-// @Description  根据指定 ID 物理或逻辑移除对应的{{ .ChineseName }}记录。
+// @Description  根据指定 ID 永久删除{{ .ChineseName }}实体。
 // @Tags         {{ .TagName }}
 // @Accept       json
 // @Produce      json
@@ -133,8 +137,8 @@ func (h *{{ .PascalName }}Handler) Update(c fiber.Ctx) error {
 // @Success      204 "删除成功无内容返回"
 // @x-order      5
 // @Router       {{ .RoutePath }}/{id} [delete]
-func (h *{{ .PascalName }}Handler) Delete(c fiber.Ctx) error {
-	var pathParams {{ .DTOPackage }}.{{ .PascalName }}PathParams
+func (h *Handler) Delete(c fiber.Ctx) error {
+	var pathParams {{ .PascalName }}PathParams
 	if err := c.Bind().URI(&pathParams); err != nil {
 		return err
 	}

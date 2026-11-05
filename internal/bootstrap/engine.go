@@ -6,49 +6,49 @@ import (
 	"github.com/gofiber/fiber/v3"
 
 	"cfiber/internal/config"
-	"cfiber/internal/handler"
-	adminhandler "cfiber/internal/handler/admin"
+	"cfiber/internal/feature/admin"
+	authadminv1 "cfiber/internal/feature/admin/auth/v1"
+	useradminv1 "cfiber/internal/feature/admin/user/v1"
+	"cfiber/internal/feature/client"
+	authclientv1 "cfiber/internal/feature/client/auth/v1"
+	mediaclientv1 "cfiber/internal/feature/client/media/v1"
+	paymentclientv1 "cfiber/internal/feature/client/payment/v1"
+	profileclientv1 "cfiber/internal/feature/client/profile/v1"
+	realtimeclientv1 "cfiber/internal/feature/client/realtime/v1"
+	"cfiber/internal/feature/system"
 	"cfiber/internal/middleware"
 	"cfiber/internal/middleware/global"
-	"cfiber/internal/route"
-	adminroute "cfiber/internal/route/admin"
 	"cfiber/pkg/validator"
 )
 
 // routeHandlers 汇总各模块的 HTTP 处理器，由装配方填充。
 type routeHandlers struct {
-	system    *handler.SystemHandler
-	auth      *handler.AuthHandler
-	profile   *handler.ProfileHandler
-	media     *handler.MediaHandler
-	admin     *adminhandler.UserHandler
-	adminAuth *adminhandler.AuthHandler
-	realtime  *handler.RealtimeHandler
-	payment   *handler.PaymentHandler
+	system *system.SystemHandler
+	client client.Handlers
+	admin  admin.Handlers
 }
 
 // mount 把全部模块挂载到 /v1 分组下。
 func (h routeHandlers) mount(v1 fiber.Router, mw *middleware.Middleware) {
-	route.RegisterAuthRoutes(v1, h.auth, mw)
-	route.RegisterProfileRoutes(v1, h.profile, mw)
-	route.RegisterMediaRoutes(v1, h.media, mw)
-	adminroute.RegisterAdminAuthRoutes(v1, h.adminAuth, mw)
-	adminroute.RegisterAdminUserRoutes(v1, h.admin, mw)
-	route.RegisterRealtimeRoutes(v1, h.realtime, mw)
-	route.RegisterPaymentRoutes(v1, h.payment, mw)
+	client.RegisterRoutes(v1, h.client, mw)
+	admin.RegisterRoutes(v1, h.admin, mw)
 }
 
 // zeroHandlers 提供仅用于撑起路由表的零值处理器。
 func zeroHandlers() routeHandlers {
 	return routeHandlers{
-		system:    &handler.SystemHandler{},
-		auth:      &handler.AuthHandler{},
-		profile:   &handler.ProfileHandler{},
-		media:     &handler.MediaHandler{},
-		admin:     &adminhandler.UserHandler{},
-		adminAuth: &adminhandler.AuthHandler{},
-		realtime:  &handler.RealtimeHandler{},
-		payment:   &handler.PaymentHandler{},
+		system: &system.SystemHandler{},
+		client: client.Handlers{
+			Auth:     &authclientv1.Handler{},
+			Profile:  &profileclientv1.Handler{},
+			Media:    &mediaclientv1.Handler{},
+			Payment:  &paymentclientv1.Handler{},
+			Realtime: &realtimeclientv1.Handler{},
+		},
+		admin: admin.Handlers{
+			Auth: &authadminv1.Handler{},
+			User: &useradminv1.Handler{},
+		},
 	}
 }
 
@@ -104,15 +104,19 @@ func buildEngine(
 	)
 
 	// 注册根路径与系统探针路由（/、/livez、/readyz）
-	route.RegisterSystemRoutes(app, handlers.system)
+	system.RegisterRoutes(app, handlers.system)
 
-	// 仅在开启 ENABLE_DOCS 时注册 API 文档路由
-	if cfg.App.EnableDocs {
-		registerDocs(app)
-	}
-
+	// 统一 v1 路由前缀
 	v1 := app.Group("/v1")
+
+	// 业务模块必须提供至少一套可用 Handler 实现
+	if handlers == (routeHandlers{}) {
+		return nil, errors.New("cannot mount routes with empty routeHandlers")
+	}
 	handlers.mount(v1, routeMW)
+
+	// API 文档引擎在单独文件中装配，避免主流程膨胀
+	registerDocs(app)
 
 	return app, nil
 }

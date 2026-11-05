@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"cfiber/internal/config"
-	"cfiber/internal/notification/store"
+	"cfiber/internal/feature/client/auth/store"
 	"cfiber/pkg/cache"
 	"cfiber/pkg/notification"
 	"cfiber/pkg/queue"

@@ -7,6 +7,9 @@ import (
 	"github.com/samber/do/v2"
 
 	"cfiber/internal/config"
+	"cfiber/internal/feature/admin"
+	"cfiber/internal/feature/client"
+	"cfiber/internal/feature/system"
 	"cfiber/pkg/eventbus"
 	"cfiber/pkg/logger"
 )
@@ -22,7 +25,9 @@ func NewInjector(options ...func(*do.InjectorOpts)) *do.RootScope {
 		InfraPackage,
 		SubsystemPackage,
 		SecurityPackage,
-		ServicesPackage,
+		system.Package,
+		client.Package,
+		admin.Package,
 		HandlersPackage,
 	)
 }

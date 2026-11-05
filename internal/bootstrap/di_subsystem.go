@@ -5,10 +5,9 @@ import (
 
 	"cfiber/internal/config"
 	"cfiber/internal/database"
-	"cfiber/internal/job"
-	"cfiber/internal/listener"
-	"cfiber/internal/notification/store"
-	"cfiber/internal/realtime"
+	clientauth "cfiber/internal/feature/client/auth"
+	clientauthstore "cfiber/internal/feature/client/auth/store"
+	clientrealtime "cfiber/internal/feature/client/realtime"
 	"cfiber/pkg/cache"
 	"cfiber/pkg/eventbus"
 	"cfiber/pkg/logger"
@@ -28,7 +27,7 @@ var SubsystemPackage = do.Package(
 	do.Lazy(func(i do.Injector) (*queue.TaskRouter, error) {
 		router := queue.NewTaskRouter()
 		mailerClient := do.MustInvoke[mailer.Mailer](i)
-		job.RegisterJobs(router, mailerClient)
+		clientauth.RegisterJobs(router, mailerClient)
 		return router, nil
 	}),
 
@@ -76,7 +75,7 @@ var SubsystemPackage = do.Package(
 			return nil, err
 		}
 
-		if err := listener.RegisterListeners(bus, producer); err != nil {
+		if err := clientauth.RegisterListeners(bus, producer); err != nil {
 			_ = bus.Close()
 			return nil, err
 		}
@@ -91,7 +90,7 @@ var SubsystemPackage = do.Package(
 	do.Lazy(func(i do.Injector) (*platformRealtime.Registry, error) {
 		db := do.MustInvoke[*database.DB](i)
 		reg := platformRealtime.NewRegistry()
-		realtime.RegisterChannels(reg, db)
+		clientrealtime.RegisterChannels(reg, db)
 		return reg, nil
 	}),
 
@@ -110,7 +109,7 @@ var SubsystemPackage = do.Package(
 		gateway := do.MustInvoke[platformRealtime.Gateway](i)
 		producer := do.MustInvoke[queue.Producer](i)
 
-		notifier, err := notification.New(cfg.Notification, mailerClient, gateway, store.NewChannel(db))
+		notifier, err := notification.New(cfg.Notification, mailerClient, gateway, clientauthstore.NewChannel(db))
 		if err != nil {
 			return nil, err
 		}
@@ -154,5 +153,8 @@ var SubsystemPackage = do.Package(
 		cfg := do.MustInvoke[*config.Config](i)
 		log := do.MustInvoke[*logger.Logger](i)
 		return payment.NewManager(cfg.Payment, log)
+	}),
+	do.Lazy(func(i do.Injector) (payment.Gateway, error) {
+		return do.MustInvoke[*payment.Manager](i), nil
 	}),
 )
