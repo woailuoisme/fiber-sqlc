@@ -106,10 +106,12 @@ sqlc-diff:
     sqlc diff
 
 # 压测（wrk）
-bench path="/livez" *args="":
-    wrk -t4 -c200 -d30s --latency {{args}} "http://localhost:${APP_PORT:-3300}{{path}}"
+wrk path="/livez" *args="":
+    wrk -t4 -c200 -d30s --latency {{args}} "http://127.0.0.1:${APP_PORT:-3300}{{path}}"
 
-alias wrk := bench
+oha:
+		oha -z 30s -c 200 --latency-correction http://127.0.0.1:3300/livez
+
 
 # 应用未执行的 Atlas 迁移
 migrate:
