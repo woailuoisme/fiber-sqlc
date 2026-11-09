@@ -1,4 +1,4 @@
-name: Docker Build and Push
+name: Release & Docker Build
 
 on:
   push:
@@ -84,3 +84,30 @@ jobs:
           # Use the built-in GitHub Actions cache so builds stay fast without extra remote image layers
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  github-release:
+    name: Create GitHub Release
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository with full history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes with git-cliff
+        id: git-cliff
+        uses: orhun/git-cliff-action@v4
+        with:
+          args: --verbose --latest --strip header
+        env:
+          OUTPUT: RELEASE_NOTES.md
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
