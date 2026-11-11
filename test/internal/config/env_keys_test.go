@@ -27,8 +27,11 @@ import (
 // nonConfigEnvVars 记录环境文件里刻意不属于应用配置的变量：它们服务于开发或测试工具
 // 而非进程自身，因此不该出现在 configKeys 里。新增这类变量时要补到这里。
 var nonConfigEnvVars = map[string]string{
-	"ATLAS_DEV_URL":     "atlas migrate diff 的比对库，只被 atlas CLI 读取",
-	"TEST_DATABASE_URL": "集成测试专用库，只被 test/integration 读取",
+	"ATLAS_DEV_URL":              "atlas migrate diff 的比对库，只被 atlas CLI 读取",
+	"TEST_DATABASE_URL":          "集成测试专用库，只被 test/integration 读取",
+	"CENTRIFUGO_ALLOWED_ORIGINS": "Centrifugo 服务端跨域来源，由 compose 容器读取",
+	"CENTRIFUGO_ADMIN_PASSWORD":  "Centrifugo 运维控制台密码，由 compose 容器读取",
+	"CENTRIFUGO_ADMIN_SECRET":    "Centrifugo 运维控制台 HMAC 密钥，由 compose 容器读取",
 }
 
 // probeValues 是探测每个键时依次尝试的候选值，覆盖结构体里的五种落点：字符串、整数、

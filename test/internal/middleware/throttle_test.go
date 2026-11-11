@@ -253,7 +253,7 @@ func TestRateLimit_AuthenticatedScope(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	// 验证存储中的 key 包含了 user:usr_12345
-	assert.NotEmpty(t, store.data["ratelimit:authenticated:user:usr_12345"])
+	assert.NotEmpty(t, store.data["limiter:ratelimit:authenticated:user:usr_12345"])
 }
 
 // TestThrottle_CustomWindow 验证支持任意时间窗口（如 10 秒）。
@@ -301,7 +301,7 @@ func TestThrottle_CustomKey(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	expectedKey := "ratelimit:custom:email:admin@example.com"
+	expectedKey := "limiter:ratelimit:custom:email:admin@example.com"
 	assert.NotEmpty(t, store.data[expectedKey])
 }
 
