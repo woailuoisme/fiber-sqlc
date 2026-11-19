@@ -16,7 +16,6 @@ import (
 
 	"cfiber/internal/config"
 	clientpayment "cfiber/internal/feature/client/payment"
-	paymentv1 "cfiber/internal/feature/client/payment/v1"
 	"cfiber/internal/middleware/global"
 	"cfiber/pkg/logger"
 	"cfiber/pkg/payment"
@@ -41,13 +40,13 @@ func setupPaymentTest(t *testing.T) (*fiber.App, *clientpayment.PaymentService, 
 	require.NoError(t, err)
 
 	svc := clientpayment.NewPaymentService(mgr, nil, cfg, nil)
-	h := paymentv1.NewHandler(svc)
+	h := clientpayment.NewHandler(svc)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.HandleError,
 	})
 	v1 := app.Group("/v1")
-	paymentv1.RegisterRoutes(v1, h, nil)
+	clientpayment.RegisterRoutes(v1, h, nil)
 
 	return app, svc, mgr
 }
@@ -378,13 +377,13 @@ func TestHandleNotification_GatewayNotInitialized(t *testing.T) {
 	}
 	// paymentManager 为 nil
 	svc := clientpayment.NewPaymentService(nil, nil, cfg, nil)
-	h := paymentv1.NewHandler(svc)
+	h := clientpayment.NewHandler(svc)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.HandleError,
 	})
 	v1 := app.Group("/v1")
-	paymentv1.RegisterRoutes(v1, h, nil)
+	clientpayment.RegisterRoutes(v1, h, nil)
 
 	req := httptest.NewRequest(
 		http.MethodPost,

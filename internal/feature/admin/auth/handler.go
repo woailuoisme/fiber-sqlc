@@ -1,9 +1,8 @@
-package v1
+package adminauth
 
 import (
 	"github.com/gofiber/fiber/v3"
 
-	adminauth "cfiber/internal/feature/admin/auth"
 	"cfiber/pkg/authentication"
 	"cfiber/pkg/response"
 	"cfiber/pkg/validator"
@@ -11,11 +10,11 @@ import (
 
 // Handler 负责处理后台管理端认证授权相关的 HTTP 请求。
 type Handler struct {
-	svc *adminauth.AuthService
+	svc *AuthService
 }
 
 // NewHandler 实例化后台认证控制器。
-func NewHandler(svc *adminauth.AuthService) *Handler {
+func NewHandler(svc *AuthService) *Handler {
 	return &Handler{svc: svc}
 }
 
@@ -41,12 +40,7 @@ func (h *Handler) SignInEmail(c fiber.Ctx) error {
 		return err
 	}
 
-	return response.OK(c, SessionResource{
-		Token:        session.Token,
-		RefreshToken: session.RefreshToken,
-		ExpiresIn:    session.ExpiresIn,
-		User:         session.User,
-	})
+	return response.OK(c, SessionResource(session))
 }
 
 // GetSession 处理 GET /v1/admin/auth/get-session。
@@ -96,12 +90,7 @@ func (h *Handler) Refresh(c fiber.Ctx) error {
 		return err
 	}
 
-	return response.OK(c, SessionResource{
-		Token:        session.Token,
-		RefreshToken: session.RefreshToken,
-		ExpiresIn:    session.ExpiresIn,
-		User:         session.User,
-	})
+	return response.OK(c, SessionResource(session))
 }
 
 // SignOut 处理 POST /v1/admin/auth/sign-out。

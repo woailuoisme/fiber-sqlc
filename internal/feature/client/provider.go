@@ -7,14 +7,10 @@ import (
 	"cfiber/internal/database"
 	"cfiber/internal/database/sqlc"
 	clientauth "cfiber/internal/feature/client/auth"
-	authv1 "cfiber/internal/feature/client/auth/v1"
-	mediav1 "cfiber/internal/feature/client/media/v1"
+	clientmedia "cfiber/internal/feature/client/media"
 	clientpayment "cfiber/internal/feature/client/payment"
-	paymentv1 "cfiber/internal/feature/client/payment/v1"
 	clientprofile "cfiber/internal/feature/client/profile"
-	profilev1 "cfiber/internal/feature/client/profile/v1"
 	clientrealtime "cfiber/internal/feature/client/realtime"
-	realtimev1 "cfiber/internal/feature/client/realtime/v1"
 	"cfiber/internal/user"
 	platformauth "cfiber/pkg/authentication"
 	"cfiber/pkg/cache"
@@ -55,9 +51,9 @@ var Package = do.Package(
 		}), nil
 	}),
 
-	do.Lazy(func(i do.Injector) (*authv1.Handler, error) {
+	do.Lazy(func(i do.Injector) (*clientauth.Handler, error) {
 		svc := do.MustInvoke[*clientauth.AuthService](i)
-		return authv1.NewHandler(svc), nil
+		return clientauth.NewHandler(svc), nil
 	}),
 
 	// 2. 个人档案服务与 HTTP Handler
@@ -70,9 +66,9 @@ var Package = do.Package(
 		}), nil
 	}),
 
-	do.Lazy(func(i do.Injector) (*profilev1.Handler, error) {
+	do.Lazy(func(i do.Injector) (*clientprofile.Handler, error) {
 		svc := do.MustInvoke[*clientprofile.ProfileService](i)
-		return profilev1.NewHandler(svc), nil
+		return clientprofile.NewHandler(svc), nil
 	}),
 
 	// 3. 支付服务与 HTTP Handler
@@ -85,9 +81,9 @@ var Package = do.Package(
 		return clientpayment.NewPaymentService(gateway, c, cfg, pub), nil
 	}),
 
-	do.Lazy(func(i do.Injector) (*paymentv1.Handler, error) {
+	do.Lazy(func(i do.Injector) (*clientpayment.Handler, error) {
 		svc := do.MustInvoke[*clientpayment.PaymentService](i)
-		return paymentv1.NewHandler(svc), nil
+		return clientpayment.NewHandler(svc), nil
 	}),
 
 	// 4. 实时通信服务与 HTTP Handler
@@ -104,25 +100,25 @@ var Package = do.Package(
 		}), nil
 	}),
 
-	do.Lazy(func(i do.Injector) (*realtimev1.Handler, error) {
+	do.Lazy(func(i do.Injector) (*clientrealtime.Handler, error) {
 		svc := do.MustInvoke[*clientrealtime.RealtimeService](i)
-		return realtimev1.NewHandler(svc), nil
+		return clientrealtime.NewHandler(svc), nil
 	}),
 
 	// 5. 媒体处理 HTTP Handler
-	do.Lazy(func(i do.Injector) (*mediav1.Handler, error) {
+	do.Lazy(func(i do.Injector) (*clientmedia.Handler, error) {
 		uploader := do.MustInvoke[media.Uploader](i)
-		return mediav1.NewHandler(uploader), nil
+		return clientmedia.NewHandler(uploader), nil
 	}),
 
 	// 6. 聚合 Handlers 供路由层统一装配
 	do.Lazy(func(i do.Injector) (Handlers, error) {
 		return Handlers{
-			Auth:     do.MustInvoke[*authv1.Handler](i),
-			Profile:  do.MustInvoke[*profilev1.Handler](i),
-			Payment:  do.MustInvoke[*paymentv1.Handler](i),
-			Media:    do.MustInvoke[*mediav1.Handler](i),
-			Realtime: do.MustInvoke[*realtimev1.Handler](i),
+			Auth:     do.MustInvoke[*clientauth.Handler](i),
+			Profile:  do.MustInvoke[*clientprofile.Handler](i),
+			Payment:  do.MustInvoke[*clientpayment.Handler](i),
+			Media:    do.MustInvoke[*clientmedia.Handler](i),
+			Realtime: do.MustInvoke[*clientrealtime.Handler](i),
 		}, nil
 	}),
 )

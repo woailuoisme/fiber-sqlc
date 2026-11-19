@@ -70,7 +70,7 @@ func TestGenerateCRUD_Execution(t *testing.T) {
 		assert.NotEmpty(t, content)
 	}
 
-	dtoPath := filepath.Join(tempDir, "internal", "feature", "admin", "article", "v1", "dto.go")
+	dtoPath := filepath.Join(tempDir, "internal", "feature", "admin", "article", "dto.go")
 	dtoContent, err := os.ReadFile(dtoPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(dtoContent), "ArticlePathParams")
@@ -83,18 +83,18 @@ func TestGenerateCRUD_Execution(t *testing.T) {
 	assert.Contains(t, string(serviceContent), "package adminarticle")
 	assert.Contains(t, string(serviceContent), "type ArticleService interface")
 
-	handlerPath := filepath.Join(tempDir, "internal", "feature", "admin", "article", "v1", "handler.go")
+	handlerPath := filepath.Join(tempDir, "internal", "feature", "admin", "article", "handler.go")
 	handlerContent, err := os.ReadFile(handlerPath)
 	require.NoError(t, err)
-	assert.Contains(t, string(handlerContent), "package v1")
+	assert.Contains(t, string(handlerContent), "package adminarticle")
 	assert.Contains(t, string(handlerContent), "response.Paginated(c, resources, meta)")
 	assert.Contains(t, string(handlerContent), "@Tags         文章管理")
 
-	routesPath := filepath.Join(tempDir, "internal", "feature", "admin", "article", "v1", "router.go")
+	routesPath := filepath.Join(tempDir, "internal", "feature", "admin", "article", "router.go")
 	routesContent, err := os.ReadFile(routesPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(routesContent), "RegisterRoutes")
-	assert.Contains(t, string(routesContent), "package v1")
+	assert.Contains(t, string(routesContent), "package adminarticle")
 	assert.Contains(t, string(routesContent), `mw.Can(authorization.Resource("articles")`)
 
 	queriesPath := filepath.Join(tempDir, "database", "queries", "articles.sql")
@@ -169,7 +169,7 @@ func TestDestroyCRUD_Execution(t *testing.T) {
 		assert.Equal(t, scaffold.ActionDryRun, r.Action)
 	}
 
-	handlerPath := filepath.Join(tempDir, "internal", "feature", "admin", "article", "v1", "handler.go")
+	handlerPath := filepath.Join(tempDir, "internal", "feature", "admin", "article", "handler.go")
 	_, err = os.Stat(handlerPath)
 	require.NoError(t, err)
 

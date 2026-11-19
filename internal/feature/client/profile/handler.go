@@ -1,20 +1,19 @@
-package v1
+package clientprofile
 
 import (
 	"github.com/gofiber/fiber/v3"
 
-	clientprofile "cfiber/internal/feature/client/profile"
 	"cfiber/pkg/authentication"
 	"cfiber/pkg/response"
 )
 
 // Handler 是本人档案端点的 HTTP 适配层。
 type Handler struct {
-	svc *clientprofile.ProfileService
+	svc *ProfileService
 }
 
 // NewHandler 构造 Handler。
-func NewHandler(svc *clientprofile.ProfileService) *Handler {
+func NewHandler(svc *ProfileService) *Handler {
 	return &Handler{svc: svc}
 }
 

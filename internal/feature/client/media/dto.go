@@ -1,4 +1,4 @@
-package v1
+package clientmedia
 
 import (
 	"cfiber/pkg/media"

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	userv1 "cfiber/internal/feature/admin/user/v1"
+	adminuser "cfiber/internal/feature/admin/user"
 	"cfiber/internal/middleware"
 )
 
@@ -19,9 +19,9 @@ import (
 func TestRegisterAdminUserRoutes_Registration(t *testing.T) {
 	app := fiber.New()
 	mw := middleware.New(middleware.Deps{})
-	h := userv1.NewHandler(nil)
+	h := adminuser.NewHandler(nil)
 
-	userv1.RegisterRoutes(app, h, mw)
+	adminuser.RegisterRoutes(app, h, mw)
 
 	routes := app.GetRoutes(true)
 	var paths []string

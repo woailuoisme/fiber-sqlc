@@ -1,11 +1,10 @@
-package v1
+package clientauth
 
 import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/utils/v2"
 
-	clientauth "cfiber/internal/feature/client/auth"
-	userv1 "cfiber/internal/feature/client/user/v1"
+	clientuser "cfiber/internal/feature/client/user"
 	"cfiber/pkg/authentication"
 	"cfiber/pkg/response"
 	"cfiber/pkg/validator"
@@ -13,11 +12,11 @@ import (
 
 // Handler 是认证特性的 HTTP 适配层。
 type Handler struct {
-	svc *clientauth.AuthService
+	svc *AuthService
 }
 
 // NewHandler 构造 Handler。
-func NewHandler(svc *clientauth.AuthService) *Handler {
+func NewHandler(svc *AuthService) *Handler {
 	return &Handler{svc: svc}
 }
 
@@ -39,7 +38,7 @@ func (h *Handler) SignUpEmail(c fiber.Ctx) error {
 		return err
 	}
 
-	session, err := h.svc.SignUpEmail(c.Context(), clientauth.SignUpParams{
+	session, err := h.svc.SignUpEmail(c.Context(), SignUpParams{
 		Name:       body.Name,
 		Email:      body.Email,
 		Password:   body.Password,
@@ -53,7 +52,7 @@ func (h *Handler) SignUpEmail(c fiber.Ctx) error {
 		Token:        session.Token,
 		RefreshToken: session.RefreshToken,
 		ExpiresIn:    session.ExpiresIn,
-		User:         userv1.ProjectUser(session.User),
+		User:         clientuser.ProjectUser(session.User),
 	})
 }
 
@@ -82,7 +81,7 @@ func (h *Handler) SignInEmail(c fiber.Ctx) error {
 		Token:        session.Token,
 		RefreshToken: session.RefreshToken,
 		ExpiresIn:    session.ExpiresIn,
-		User:         userv1.ProjectUser(session.User),
+		User:         clientuser.ProjectUser(session.User),
 	})
 }
 
@@ -111,7 +110,7 @@ func (h *Handler) SignInUsername(c fiber.Ctx) error {
 		Token:        session.Token,
 		RefreshToken: session.RefreshToken,
 		ExpiresIn:    session.ExpiresIn,
-		User:         userv1.ProjectUser(session.User),
+		User:         clientuser.ProjectUser(session.User),
 	})
 }
 
@@ -164,7 +163,7 @@ func (h *Handler) GetSession(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return response.OK(c, GetSessionResource{User: userv1.ProjectUser(u)})
+	return response.OK(c, GetSessionResource{User: clientuser.ProjectUser(u)})
 }
 
 // Refresh 处理 POST /v1/auth/token/refresh。
@@ -194,7 +193,7 @@ func (h *Handler) Refresh(c fiber.Ctx) error {
 		Token:        session.Token,
 		RefreshToken: session.RefreshToken,
 		ExpiresIn:    session.ExpiresIn,
-		User:         userv1.ProjectUser(session.User),
+		User:         clientuser.ProjectUser(session.User),
 	})
 }
 
@@ -294,12 +293,7 @@ func (h *Handler) ResetPassword(c fiber.Ctx) error {
 		return err
 	}
 
-	if err := h.svc.ResetPassword(c.Context(), clientauth.ResetPasswordParams{
-		Email:       body.Email,
-		Token:       body.Token,
-		OTP:         body.OTP,
-		NewPassword: body.NewPassword,
-	}); err != nil {
+	if err := h.svc.ResetPassword(c.Context(), ResetPasswordParams(body)); err != nil {
 		return err
 	}
 	return response.NoContent(c)

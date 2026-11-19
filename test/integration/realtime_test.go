@@ -28,7 +28,6 @@ import (
 
 	"cfiber/internal/config"
 	clientrealtime "cfiber/internal/feature/client/realtime"
-	realtimev1 "cfiber/internal/feature/client/realtime/v1"
 	"cfiber/internal/middleware/global"
 	platformRealtime "cfiber/pkg/realtime"
 )
@@ -295,7 +294,7 @@ func TestRealtime_ProxySubscribeCallbackContract(t *testing.T) {
 		Cfg:     appCfg,
 		Secret:  appCfg.Realtime.Secret,
 	})
-	handler := realtimev1.NewHandler(svc)
+	handler := clientrealtime.NewHandler(svc)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.HandleError,

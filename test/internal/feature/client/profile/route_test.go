@@ -17,7 +17,6 @@ import (
 
 	"cfiber/internal/enum"
 	clientprofile "cfiber/internal/feature/client/profile"
-	profilev1 "cfiber/internal/feature/client/profile/v1"
 	"cfiber/internal/middleware/global"
 	"cfiber/internal/user"
 	"cfiber/pkg/authentication"
@@ -50,7 +49,7 @@ func executeRequest(t *testing.T, app *fiber.App, req *http.Request) (int, strin
 
 // TestUpdateProfileRequestShape 校验自助更新只暴露 Q27 允许的字段。
 func TestUpdateProfileRequestShape(t *testing.T) {
-	var request profilev1.UpdateProfileBody
+	var request clientprofile.UpdateProfileBody
 	require.NoError(t, json.Unmarshal([]byte(`{
 		"name":"Alice",
 		"avatar_path":null,
@@ -82,7 +81,7 @@ func TestUploadAvatarValidation(t *testing.T) {
 		},
 	}
 	users := &fakeUsers{profile: user.Profile{}}
-	h := profilev1.NewHandler(clientprofile.MustNewProfileService(clientprofile.ProfileDeps{Users: users, Storage: storage}))
+	h := clientprofile.NewHandler(clientprofile.MustNewProfileService(clientprofile.ProfileDeps{Users: users, Storage: storage}))
 
 	newTestEngine := func(withAuth bool) *fiber.App {
 		app := fiber.New(fiber.Config{
@@ -168,7 +167,7 @@ func TestUploadAvatarWritesAvatarPath(t *testing.T) {
 func newAvatarEngine(t *testing.T, storage *fakeStorage, users *fakeUsers) *fiber.App {
 	t.Helper()
 
-	h := profilev1.NewHandler(clientprofile.MustNewProfileService(clientprofile.ProfileDeps{Users: users, Storage: storage}))
+	h := clientprofile.NewHandler(clientprofile.MustNewProfileService(clientprofile.ProfileDeps{Users: users, Storage: storage}))
 	app := fiber.New(fiber.Config{
 		StructValidator: testValidator,
 		ErrorHandler:    global.HandleError,

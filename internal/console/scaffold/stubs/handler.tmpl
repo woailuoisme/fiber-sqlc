@@ -5,17 +5,16 @@ import (
 	"github.com/samber/lo"
 
 	"cfiber/internal/database/sqlc"
-	{{ .ServicePackage }} "{{ .ServiceImportPath }}"
 	"cfiber/pkg/response"
 )
 
 // Handler 负责处理 {{ .ChineseName }} 相关的 HTTP 交互。
 type Handler struct {
-	svc {{ .ServicePackage }}.{{ .PascalName }}Service
+	svc {{ .PascalName }}Service
 }
 
 // NewHandler 实例化 {{ .ChineseName }} 控制器。
-func NewHandler(svc {{ .ServicePackage }}.{{ .PascalName }}Service) *Handler {
+func NewHandler(svc {{ .PascalName }}Service) *Handler {
 	return &Handler{svc: svc}
 }
 

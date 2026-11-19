@@ -1,9 +1,9 @@
-package v1
+package clientauth
 
 import (
 	"strings"
 
-	userv1 "cfiber/internal/feature/client/user/v1"
+	clientuser "cfiber/internal/feature/client/user"
 	"cfiber/pkg/errs"
 	"cfiber/pkg/validator"
 )
@@ -119,13 +119,13 @@ type SessionResource struct {
 	// 访问令牌有效期（秒）
 	ExpiresIn int `json:"expiresIn" example:"900"`
 	// 用户身份资料投影
-	User userv1.UserResource `json:"user"`
+	User clientuser.UserResource `json:"user"`
 }
 
 // GetSessionResource 是 GET /v1/auth/get-session 的响应体。
 type GetSessionResource struct {
 	// 当前登录用户身份资料投影
-	User userv1.UserResource `json:"user"`
+	User clientuser.UserResource `json:"user"`
 }
 
 // StatusResource 是通用布尔状态响应体。

@@ -23,7 +23,6 @@ import (
 	"cfiber/internal/config"
 	"cfiber/internal/enum"
 	clientrealtime "cfiber/internal/feature/client/realtime"
-	realtimev1 "cfiber/internal/feature/client/realtime/v1"
 	"cfiber/internal/middleware/global"
 	"cfiber/pkg/authentication"
 	platformRealtime "cfiber/pkg/realtime"
@@ -160,7 +159,7 @@ func TestHandlerHTTP(t *testing.T) {
 	gw, err := platformRealtime.NewManager(&cfg.Realtime, reg)
 	require.NoError(t, err)
 	svc := clientrealtime.NewRealtimeService(clientrealtime.RealtimeDeps{Gateway: gw, Cfg: cfg, Secret: cfg.Realtime.Secret})
-	h := realtimev1.NewHandler(svc)
+	h := clientrealtime.NewHandler(svc)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: global.HandleError,
@@ -182,7 +181,7 @@ func TestHandlerHTTP(t *testing.T) {
 		w := testRequest(t, app, req)
 
 		require.Equal(t, http.StatusOK, w.Code)
-		var res realtimev1.TokenResource
+		var res clientrealtime.TokenResource
 		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &res))
 		assert.NotEmpty(t, res.Token)
 		assert.Equal(t, cfg.Realtime.URL, res.WSURL)

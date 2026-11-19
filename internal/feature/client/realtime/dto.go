@@ -1,9 +1,8 @@
-package v1
+package clientrealtime
 
 import (
 	"time"
 
-	clientrealtime "cfiber/internal/feature/client/realtime"
 	platformRealtime "cfiber/pkg/realtime"
 )
 
@@ -24,7 +23,7 @@ type SubscribeBody = platformRealtime.SubscribeRequest
 type SubscribeResource = platformRealtime.SubscribeResponse
 
 // ToTokenResource 将服务层结果转换为契约响应。
-func ToTokenResource(res *clientrealtime.TokenResult) *TokenResource {
+func ToTokenResource(res *TokenResult) *TokenResource {
 	if res == nil {
 		return nil
 	}

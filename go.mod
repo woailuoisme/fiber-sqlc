@@ -4,12 +4,12 @@ go 1.27.4
 
 require (
 	charm.land/bubbles/v2 v2.2.1
-	charm.land/bubbletea/v2 v2.1.1
+	charm.land/bubbletea/v2 v2.1.2
 	charm.land/huh/v2 v2.0.3
-	charm.land/lipgloss/v2 v2.1.0
+	charm.land/lipgloss/v2 v2.1.1
 	github.com/ThreeDotsLabs/watermill v1.5.3
 	github.com/alexliesenfeld/health v0.8.1
-	github.com/brianvoe/gofakeit/v7 v7.18.2
+	github.com/brianvoe/gofakeit/v7 v7.18.9
 	github.com/caarlos0/env/v11 v11.4.2
 	github.com/casbin/casbin/v3 v3.11.0
 	github.com/centrifugal/gocent/v4 v4.0.0
@@ -21,22 +21,22 @@ require (
 	github.com/go-pay/gopay v1.5.123
 	github.com/go-playground/validator/v10 v10.30.6
 	github.com/go-resty/resty/v2 v2.17.2
-	github.com/gofiber/contrib/v3/otel v1.3.3
+	github.com/gofiber/contrib/v3/otel v1.3.4
 	github.com/gofiber/fiber/v3 v3.7.0
-	github.com/gofiber/storage/valkey v0.4.3
+	github.com/gofiber/storage/valkey v0.5.0
 	github.com/gofiber/utils/v2 v2.6.5
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/hibiken/asynq v0.26.0
-	github.com/jackc/pgx/v5 v5.12.0
+	github.com/jackc/pgx/v5 v5.13.0
 	github.com/johnfercher/maroto/v2 v2.4.4
-	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20261110072001-92e6a788d17c
+	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20261112022628-200f4cc7a645
 	github.com/meilisearch/meilisearch-go v0.37.0
 	github.com/minio/minio-go/v7 v7.4.1
 	github.com/nicksnyder/go-i18n/v2 v2.7.0
 	github.com/pelletier/go-toml/v2 v2.4.3
-	github.com/redis/rueidis v1.0.79
-	github.com/resend/resend-go/v4 v4.12.1
+	github.com/redis/rueidis v1.0.80
+	github.com/resend/resend-go/v4 v4.12.2
 	github.com/rs/zerolog v1.35.1
 	github.com/samber/do/v2 v2.1.0
 	github.com/samber/hot v0.13.1
@@ -63,7 +63,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	golang.org/x/crypto v0.59.0
 	golang.org/x/image v0.48.0
-	golang.org/x/net v0.62.0
+	golang.org/x/net v0.63.0
 	golang.org/x/sync v0.25.0
 	golang.org/x/text v0.44.0
 )
@@ -101,7 +101,7 @@ require (
 	github.com/go-pay/xtime v0.0.2 // indirect
 	github.com/go-playground/locales v0.14.2 // indirect
 	github.com/go-playground/universal-translator v0.18.2 // indirect
-	github.com/gofiber/schema v1.9.3 // indirect
+	github.com/gofiber/schema v1.9.4 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/hhrutter/tiff v1.0.7 // indirect
@@ -111,7 +111,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.3 // indirect
 	github.com/johnfercher/go-tree v1.1.0 // indirect
-	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/klauspost/compress v1.20.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
 	github.com/klauspost/crc32 v1.3.0 // indirect
 	github.com/leodido/go-urn v1.5.0 // indirect
@@ -149,7 +149,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/tiendc/go-deepcopy v1.7.2 // indirect
 	github.com/tinylib/msgp v1.6.5 // indirect
-	github.com/valkey-io/valkey-go v1.0.79 // indirect
+	github.com/valkey-io/valkey-go v1.0.80 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.78.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect

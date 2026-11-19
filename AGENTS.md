@@ -34,8 +34,8 @@
 
 | 命令分类 | 执行指令 | 功能说明与关键约束 |
 | :--- | :--- | :--- |
-| **开发与运行** | `just dev` | 多进程并发热重载（基于 `process-compose` 统一编排并启动 API 与 Worker 双 Air 实例，交互式 TUI 面板）。 |
-| | `just dev-stream` | 多进程并发热重载（纯终端流式日志输出，无 TUI 面板）。 |
+| **开发与运行** | `just dev` | 多进程并发热重载（基于 `dekit` 统一编排并启动 API 与 Worker 双 Air 实例，交互式 TUI 面板）。 |
+| | `just dev-stream` | 多进程并发热重载（后台常驻，日志用 `dekit attach api|worker` 查看）。 |
 | | `just dev-api` | 仅启动 API 服务的 Air 热重载（自动释放端口占用）。 |
 | | `just dev-worker` | 仅启动 Worker 服务的 Air 热重载（基于 `.air.worker.toml`）。 |
 | | `just run [ARGS]` | 直接运行 API 服务（如 `just run --port 3400`）。 |
@@ -65,7 +65,7 @@
 
 ## 3. 垂直切片与业务特性优先架构 (Vertical Slice & Feature-First Architecture)
 
-项目采用**业务特性优先（Feature-First / Vertical Slice）**设计，顶层区隔客户端 (`client`) 与管理端 (`admin`)，按业务切片组织代码，切片内部依赖方向固定为 `v1/router → v1/handler → service`，边界严格：
+项目采用**业务特性优先（Feature-First / Vertical Slice）**设计，顶层区隔客户端 (`client`) 与管理端 (`admin`)，按业务切片组织代码，切片内部依赖方向固定为 `router → handler → service`，边界严格：
 
 ```
 cmd/api/main.go                 # 应用程序唯一入口，控制权移交 internal/console
@@ -79,17 +79,17 @@ internal/                       # 私有实现层（Feature-First 垂直切片�
 ├── enum/                       # 核心领域枚举契约（Role / UserStatus / OTPType / ProviderID）
 ├── feature/                    # 垂直业务切片核心目录（Feature-First）
 │   ├── admin/                  # 后台管理端特性切片（package admin<feature>）
-│   │   ├── auth/               # 管理员认证切片（service.go, v1/dto.go, v1/handler.go, v1/router.go）
-│   │   ├── user/               # 系统用户管理切片（service.go, export.go, import.go, index.go, v1/...）
+│   │   ├── auth/               # 管理员认证切片（service.go, dto.go, handler.go, router.go）
+│   │   ├── user/               # 系统用户管理切片（service.go, export.go, import.go, index.go, ...）
 │   │   ├── provider.go         # 管理端特性服务依赖注入集中装配
 │   │   └── router.go           # 管理端特性 HTTP 路由挂载
 │   ├── client/                 # 前台客户端特性切片（package client<feature>）
-│   │   ├── auth/               # 前台认证与验证码（service.go, event.go, job.go, listener.go, notification.go, store/, v1/...）
-│   │   ├── media/              # 媒体凭据签发（v1/dto.go, v1/handler.go, v1/router.go）
-│   │   ├── payment/            # 支付渠道网关回调（service.go, event.go, v1/...）
-│   │   ├── profile/            # 个人资料与头像（service.go, v1/...）
-│   │   ├── realtime/           # 实时通信凭据与鉴权代理（service.go, channel.go, v1/...）
-│   │   ├── user/               # 客户端用户投影契约（v1/dto.go）
+│   │   ├── auth/               # 前台认证与验证码（service.go, event.go, job.go, listener.go, notification.go, store/, ...）
+│   │   ├── media/              # 媒体凭据签发（dto.go, handler.go, router.go）
+│   │   ├── payment/            # 支付渠道网关回调（service.go, event.go, ...）
+│   │   ├── profile/            # 个人资料与头像（service.go, ...）
+│   │   ├── realtime/           # 实时通信凭据与鉴权代理（service.go, channel.go, ...）
+│   │   ├── user/               # 客户端用户投影契约（dto.go）
 │   │   ├── provider.go         # 客户端特性服务依赖注入集中装配
 │   │   └── router.go           # 客户端特性 HTTP 路由挂载
 │   └── system/                 # 系统级探针特性切片（service.go, handler.go, route.go, dto.go, provider.go）
@@ -166,16 +166,16 @@ test/                           # 外部测试包（测试代码与业务逻辑�
    - 应用程序业务逻辑按垂直切片收敛在 `internal/feature/` 目录下；
    - 顶层严格区隔前台客户端接口 `internal/feature/client/` 与后台管理端接口 `internal/feature/admin/`，以及底层探针 `internal/feature/system/`；
    - 各特性模块（如 `auth`, `profile`, `payment`, `realtime`, `user`）是自包含的业务切片。切片根目录承载业务用例（`service.go`）、领域事件与异步作业（`event.go`, `job.go`, `listener.go`）；
-   - **传输层与版本控制（v1/）**：各切片直接通过 `v1/` 子包暴露传输契约与 HTTP 控制器，包含 `dto.go`、`handler.go` 与 `router.go`（包名统一为 `v1`）；
-   - **单向依赖规约**：切片根目录服务层承载业务规则，**绝对严禁**反向 import 自身的 `v1` 传输层；`v1/` 传输层允许依赖父级切片服务与领域实体；
+   - **传输层（与 service 同包）**：各切片在根目录直接暴露传输契约与 HTTP 控制器，包含 `dto.go`、`handler.go` 与 `router.go`，包名与会话服务一致（如 `clientauth`）；
+   - **单向依赖规约**：切片根目录服务层承载业务规则，传输层可调用服务层，**绝对严禁**服务层反向调用 `handler`/`router`；
    - **客户端与管理端互不依赖**：`internal/feature/client` 与 `internal/feature/admin` 之间**绝对严禁相互 import**；
-   - **禁止提前投机设计**：初始化时仅维护 `v1/` 目录，禁止预建空的 `v2/` 目录，直至业务出现真实版本迭代需求；
-   - 每个特性内部的 HTTP 路由由自身的 `v1/router.go` 自治声明，并通过切片上层的 `router.go`（如 `client/router.go`、`admin/router.go`）统一挂载至 Fiber 引擎。
+   - **禁止提前投机设计**：禁止预建空的 `v2/` 目录，直至业务出现真实版本迭代需求；
+   - 每个特性内部的 HTTP 路由由自身的 `router.go` 自治声明，并通过切片上层的 `router.go`（如 `client/router.go`、`admin/router.go`）统一挂载至 Fiber 引擎。
 2. **跨 Feature 数据共享统一沉淀至 `internal/` 内核**：跨切片复用的用户视图、字段约束、角色策略与基础 Repository 已收敛在 [internal/user/](file:///Users/seaside/Projects/backend/go/fiber-sqlc/internal/user/)，媒体处理基座已沉淀在 [pkg/media/](file:///Users/seaside/Projects/backend/go/fiber-sqlc/pkg/media/)。OpenAPI 规范统一收敛在 [api/](file:///Users/seaside/Projects/backend/go/fiber-sqlc/api/)，原 `shared/` 彻底废除。新增跨包复用的数据投影必须先入内核再被引用，严禁在下游各自复制。
 3. **分层职责绝对隔离**：
-   - **Handler (`v1/handler.go`)**：只负责 HTTP 参数解析绑定、入参校验调度、调用 Service、组装 `response.OK`。**严禁在 Handler 中编写核心业务逻辑或直接操作 ORM/SQL**。
+   - **Handler (`handler.go`)**：只负责 HTTP 参数解析绑定、入参校验调度、调用 Service、组装 `response.OK`。**严禁在 Handler 中编写核心业务逻辑或直接操作 ORM/SQL**。
    - **Service (`service.go`)**：承载纯业务规则与事务协调，输入输出均为强类型 DTO/Model。通过返回 `samber/oops` 结构化错误传递失败原因。
-   - **DTO (`v1/dto.go`)**：只承载契约结构、校验标签、投影函数与查询归一化，**严禁出现 I/O、事务或任何业务副作用**。
+   - **DTO (`dto.go`)**：只承载契约结构、校验标签、投影函数与查询归一化，**严禁出现 I/O、事务或任何业务副作用**。
    - **Platform (`pkg/`)**：基础设施层必须保持纯粹独立，**严禁 Platform 反向依赖任何 `internal/` 业务包或 `shared/` 业务包**。
 4. **Middleware 传输层协议隔离与就地内聚**：
    - `internal/middleware/` 是专属于 HTTP Delivery/Transport 传输层的通用横切逻辑（认证、鉴权、限流、CORS、监控、全局错误转换），与 Web 协议强绑定。**严禁将 `middleware` 迁入协议无关的 `shared/`**，避免污染纯净的领域共享内核。
@@ -192,7 +192,7 @@ test/                           # 外部测试包（测试代码与业务逻辑�
      - **异步任务与队列名 (Queue / Job Tasks)**：必须就近内聚在调度该任务的 Feature 切片或 `pkg/queue` 内部，各业务独立维护 Job 签名。
      - **严禁投机性死代码与 UI 徽标元数据 (YAGNI)**：严禁预先编写全系统 0 调用的投机性常量文件，严禁在后端枚举中硬编码前端展示类元数据（如 CSS 徽标颜色、选项字典映射）。
 7. **HTTP DTO 单一文件与四大后缀强类型绑定规约 (`dto.go`)**：
-   - **单一 `dto.go` 文件集中内聚**：每个特性切片的传输对象（`internal/feature/<scope>/<module>/v1/dto.go`）集中内聚，彻底废除 `request.go` 与 `response.go` 物理双文件，将该领域的全部传输契约与模型投影函数（`To<Entity>Resource`）单点内聚。
+   - **单一 `dto.go` 文件集中内聚**：每个特性切片的传输对象（`internal/feature/<scope>/<module>/dto.go`）集中内聚，彻底废除 `request.go` 与 `response.go` 物理双文件，将该领域的全部传输契约与模型投影函数（`To<Entity>Resource`）单点内聚。
    - **投影函数导出约定**：被 `service` 或 `handler` 跨包调用的投影函数与请求体派生方法必须导出（`ToUserResource`、`ProjectUser`、`FieldSet`、`AdminFieldSet`），禁止跨包引用未导出符号。
    - **四大后缀与 Fiber 绑定映射红线**：
      1. **`*Body`**：对应请求体载荷（JSON / Form），Handler 统一使用 `c.Bind().JSON(&body)`（或表单 `c.Bind().Form(&body)`）绑定；

@@ -41,7 +41,6 @@ type GeneratorOptions struct {
 type TemplateData struct {
 	ModuleFile        string
 	FeatureDir        string
-	V1Dir             string
 	DTOImportPath     string
 	HandlerImportPath string
 	ServiceImportPath string
@@ -110,14 +109,13 @@ func BuildTemplateData(opts GeneratorOptions) TemplateData {
 	}
 
 	featureDir := filepath.Join("internal", "feature", scopePrefix, singularSnake)
-	v1Dir := filepath.Join(featureDir, "v1")
 	servicePackage := scopePrefix + basePkg
 	serviceImportPath := filepath.ToSlash(filepath.Join("cfiber", featureDir))
 
-	dtoPackage := "v1"
-	handlerPackage := "v1"
-	routesPackage := "v1"
-	routesPath := filepath.Join(v1Dir, "router.go")
+	dtoPackage := servicePackage
+	handlerPackage := servicePackage
+	routesPackage := servicePackage
+	routesPath := filepath.Join(featureDir, "router.go")
 
 	chinese := opts.ChineseName
 	if chinese == "" {
@@ -146,7 +144,6 @@ func BuildTemplateData(opts GeneratorOptions) TemplateData {
 	return TemplateData{
 		ModuleFile:        moduleFile,
 		FeatureDir:        featureDir,
-		V1Dir:             v1Dir,
 		DTOImportPath:     serviceImportPath,
 		HandlerImportPath: serviceImportPath,
 		ServiceImportPath: serviceImportPath,
@@ -187,7 +184,7 @@ type Plan interface {
 	CleanupDirs() []string
 }
 
-// CRUDPlan 实现针对特性优先（feature/<scope>/<module>/v1）CRUD 模块的生成规划契约。
+// CRUDPlan 实现针对特性优先（feature/<scope>/<module>）CRUD 模块的生成规划契约。
 type CRUDPlan struct {
 	opts GeneratorOptions
 	data TemplateData
@@ -207,27 +204,22 @@ func (p *CRUDPlan) Name() string { return p.opts.Name }
 // Data 返回模板上下文数据。
 func (p *CRUDPlan) Data() TemplateData { return p.data }
 
-func (p *CRUDPlan) moduleDirs() (featureDir, v1Dir string) {
-	return p.data.FeatureDir, p.data.V1Dir
-}
-
 // Files 返回 CRUD 规划中全部目标文件及渲染模板。
 func (p *CRUDPlan) Files() ([]PlannedFile, error) {
-	featureDir, v1Dir := p.moduleDirs()
+	featureDir := p.data.FeatureDir
 	return []PlannedFile{
 		{RelPath: filepath.Join("database", "queries", p.data.PluralSnake+".sql"), Template: "queries.tmpl", Data: p.data},
 		{RelPath: filepath.Join("database", "schemas", p.data.PluralSnake+".sql"), Template: "schema.tmpl", Data: p.data},
 		{RelPath: filepath.Join(featureDir, "service.go"), Template: "service.tmpl", Data: p.data},
-		{RelPath: filepath.Join(v1Dir, "dto.go"), Template: "dto.tmpl", Data: p.data},
-		{RelPath: filepath.Join(v1Dir, "handler.go"), Template: "handler.tmpl", Data: p.data},
-		{RelPath: filepath.Join(v1Dir, "router.go"), Template: "route.tmpl", Data: p.data},
+		{RelPath: filepath.Join(featureDir, "dto.go"), Template: "dto.tmpl", Data: p.data},
+		{RelPath: filepath.Join(featureDir, "handler.go"), Template: "handler.tmpl", Data: p.data},
+		{RelPath: filepath.Join(featureDir, "router.go"), Template: "route.tmpl", Data: p.data},
 	}, nil
 }
 
 // CleanupDirs 返回该模块在销毁回退时需要尝试清理的目录列表。
 func (p *CRUDPlan) CleanupDirs() []string {
-	featureDir, v1Dir := p.moduleDirs()
-	return []string{v1Dir, featureDir}
+	return []string{p.data.FeatureDir}
 }
 
 // Pipeline 提供可插拔的代码生成与回退执行管线引擎。

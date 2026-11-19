@@ -1,4 +1,4 @@
-package v1
+package adminuser
 
 import (
 	"io"
@@ -7,18 +7,17 @@ import (
 	"github.com/samber/lo"
 
 	"cfiber/internal/database/sqlc"
-	adminuser "cfiber/internal/feature/admin/user"
 	"cfiber/internal/user"
 	"cfiber/pkg/response"
 )
 
 // Handler 是管理端用户 CRUD 的 HTTP 适配层。
 type Handler struct {
-	svc *adminuser.UserService
+	svc *UserService
 }
 
 // NewHandler 构造 Handler。
-func NewHandler(svc *adminuser.UserService) *Handler {
+func NewHandler(svc *UserService) *Handler {
 	return &Handler{svc: svc}
 }
 

@@ -1,4 +1,4 @@
-package v1
+package clientmedia
 
 import (
 	"github.com/gofiber/fiber/v3"

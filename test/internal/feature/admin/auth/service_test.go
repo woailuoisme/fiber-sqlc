@@ -15,7 +15,6 @@ import (
 	"cfiber/internal/database/sqlc"
 	"cfiber/internal/enum"
 	adminauth "cfiber/internal/feature/admin/auth"
-	authv1 "cfiber/internal/feature/admin/auth/v1"
 	appuser "cfiber/internal/user"
 	"cfiber/pkg/authentication"
 	"cfiber/pkg/errs"
@@ -387,13 +386,13 @@ func TestAdminChangePasswordFlow(t *testing.T) {
 // TestAdminAuthDTOSerialization 校验 DTO 的 JSON 序列化与反序列化字段契约。
 func TestAdminAuthDTOSerialization(t *testing.T) {
 	raw := []byte(`{"email":"admin@cfiber.local","password":"secret"}`)
-	var req authv1.SignInEmailBody
+	var req adminauth.SignInEmailBody
 	require.NoError(t, json.Unmarshal(raw, &req))
 	assert.Equal(t, "admin@cfiber.local", req.Email)
 	assert.Equal(t, "secret", req.Password)
 
 	signOutRaw := []byte(`{"refreshToken":"rt_test123"}`)
-	var signOutReq authv1.SignOutBody
+	var signOutReq adminauth.SignOutBody
 	require.NoError(t, json.Unmarshal(signOutRaw, &signOutReq))
 	require.NotNil(t, signOutReq.RefreshToken)
 	assert.Equal(t, "rt_test123", *signOutReq.RefreshToken)

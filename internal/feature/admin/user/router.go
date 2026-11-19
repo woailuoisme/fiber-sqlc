@@ -1,4 +1,4 @@
-package v1
+package adminuser
 
 import (
 	"github.com/gofiber/fiber/v3"

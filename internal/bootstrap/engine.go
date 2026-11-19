@@ -7,14 +7,14 @@ import (
 
 	"cfiber/internal/config"
 	"cfiber/internal/feature/admin"
-	authadminv1 "cfiber/internal/feature/admin/auth/v1"
-	useradminv1 "cfiber/internal/feature/admin/user/v1"
+	adminauth "cfiber/internal/feature/admin/auth"
+	adminuser "cfiber/internal/feature/admin/user"
 	"cfiber/internal/feature/client"
-	authclientv1 "cfiber/internal/feature/client/auth/v1"
-	mediaclientv1 "cfiber/internal/feature/client/media/v1"
-	paymentclientv1 "cfiber/internal/feature/client/payment/v1"
-	profileclientv1 "cfiber/internal/feature/client/profile/v1"
-	realtimeclientv1 "cfiber/internal/feature/client/realtime/v1"
+	clientauth "cfiber/internal/feature/client/auth"
+	clientmedia "cfiber/internal/feature/client/media"
+	clientpayment "cfiber/internal/feature/client/payment"
+	clientprofile "cfiber/internal/feature/client/profile"
+	clientrealtime "cfiber/internal/feature/client/realtime"
 	"cfiber/internal/feature/system"
 	"cfiber/internal/middleware"
 	"cfiber/internal/middleware/global"
@@ -39,15 +39,15 @@ func zeroHandlers() routeHandlers {
 	return routeHandlers{
 		system: &system.SystemHandler{},
 		client: client.Handlers{
-			Auth:     &authclientv1.Handler{},
-			Profile:  &profileclientv1.Handler{},
-			Media:    &mediaclientv1.Handler{},
-			Payment:  &paymentclientv1.Handler{},
-			Realtime: &realtimeclientv1.Handler{},
+			Auth:     &clientauth.Handler{},
+			Profile:  &clientprofile.Handler{},
+			Media:    &clientmedia.Handler{},
+			Payment:  &clientpayment.Handler{},
+			Realtime: &clientrealtime.Handler{},
 		},
 		admin: admin.Handlers{
-			Auth: &authadminv1.Handler{},
-			User: &useradminv1.Handler{},
+			Auth: &adminauth.Handler{},
+			User: &adminuser.Handler{},
 		},
 	}
 }

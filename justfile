@@ -8,13 +8,15 @@ app_port := env("APP_PORT", "3300")
 default:
     @just --list
 
-# 并行热重载启动 API 与 Worker（process-compose 交互式 TUI 面板）
+# 并行热重载启动 API 与 Worker（dekit 交互式 TUI 面板）
 dev *ARGS: free-port
-    process-compose up {{ARGS}}
+    dekit up {{ARGS}}
+    dekit attach
 
-# 并行热重载启动 API 与 Worker（纯终端流式日志输出，无 TUI 面板）
+# 并行热重载启动 API 与 Worker（后台常驻，日志用 dekit attach api|worker）
 dev-stream *ARGS: free-port
-    process-compose up -t=false {{ARGS}}
+    dekit up {{ARGS}}
+    @dekit ls
 
 # 仅热重载 API（Air）
 dev-api: free-port

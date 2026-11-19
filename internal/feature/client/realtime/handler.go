@@ -1,11 +1,10 @@
-package v1
+package clientrealtime
 
 import (
 	"cmp"
 
 	"github.com/gofiber/fiber/v3"
 
-	clientrealtime "cfiber/internal/feature/client/realtime"
 	"cfiber/pkg/authentication"
 	"cfiber/pkg/errs"
 	platformRealtime "cfiber/pkg/realtime"
@@ -14,11 +13,11 @@ import (
 
 // Handler 是实时通信端点的 HTTP 适配层。
 type Handler struct {
-	svc *clientrealtime.RealtimeService
+	svc *RealtimeService
 }
 
 // NewHandler 构造 Handler。
-func NewHandler(svc *clientrealtime.RealtimeService) *Handler {
+func NewHandler(svc *RealtimeService) *Handler {
 	return &Handler{
 		svc: svc,
 	}

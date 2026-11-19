@@ -1,4 +1,4 @@
-package v1
+package clientpayment
 
 // PaymentNotifyPathParams 是 POST /payments/notify/:channel 及 /payments/notify/:channel/:app 的路径参数。
 type PaymentNotifyPathParams struct {

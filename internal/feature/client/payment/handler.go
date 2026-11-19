@@ -1,4 +1,4 @@
-package v1
+package clientpayment
 
 import (
 	"log/slog"
@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 
-	clientpayment "cfiber/internal/feature/client/payment"
 	"cfiber/pkg/errs"
 	"cfiber/pkg/logger"
 	"cfiber/pkg/payment"
@@ -14,12 +13,12 @@ import (
 
 // Handler 承接支付渠道的 Webhook 异步通知与客户端同步跳转。
 type Handler struct {
-	svc     *clientpayment.PaymentService
+	svc     *PaymentService
 	gateway payment.Gateway
 }
 
 // NewHandler 构造支付回调 HTTP 处理器。
-func NewHandler(svc *clientpayment.PaymentService) *Handler {
+func NewHandler(svc *PaymentService) *Handler {
 	var gw payment.Gateway
 	if svc != nil {
 		gw = svc.Gateway()
@@ -50,7 +49,7 @@ func (h *Handler) HandleNotification(c fiber.Ctx) error {
 		logger.FromContext(c.Context()).WarnContext(c.Context(), "unsupported payment channel callback received",
 			slog.String("channel", pathParams.Channel),
 		)
-		return errs.BadRequest(clientpayment.MsgUnsupportedChannel)
+		return errs.BadRequest(MsgUnsupportedChannel)
 	}
 
 	if h.gateway == nil {

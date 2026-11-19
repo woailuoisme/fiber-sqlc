@@ -14,7 +14,7 @@ import (
 
 	"cfiber/internal/config"
 	"cfiber/internal/database"
-	useradminv1 "cfiber/internal/feature/admin/user/v1"
+	adminuser "cfiber/internal/feature/admin/user"
 	"cfiber/internal/user"
 	"cfiber/pkg/authorization"
 	"cfiber/pkg/cache"
@@ -153,7 +153,7 @@ var InfraPackage = do.Package(
 
 	// 10. 国际化参数校验器
 	do.Lazy(func(i do.Injector) (*validator.Validator, error) {
-		return validator.New(slices.Concat(user.ValidationOptions(), useradminv1.ValidationOptions())...)
+		return validator.New(slices.Concat(user.ValidationOptions(), adminuser.ValidationOptions())...)
 	}),
 
 	// 11. 密码哈希器（统一绑定 PasswordHasher 契约）

@@ -28,8 +28,8 @@ graph TD
     Client["客户端请求"] --> MW["Fiber 中间件栈<br/>(CORS / Limiter / Telemetry / Error)"]
     Admin["管理端请求"] --> MW
     MW --> FeatureRouter["Feature 路由挂载<br/>(client/router.go, admin/router.go)"]
-    FeatureRouter --> SliceRouter["切片内部路由 (v1/router.go)"]
-    SliceRouter --> Handler["HTTP 控制器 (v1/handler.go)"]
+    FeatureRouter --> SliceRouter["切片内部路由 (router.go)"]
+    SliceRouter --> Handler["HTTP 控制器 (handler.go)"]
     Handler --> Service["领域服务 (service.go)"]
     Service --> SQLC["类型安全数据访问 (internal/database/sqlc)"]
     Service --> EventQueue["事件总线 / 异步队列 (Watermill / Asynq)"]
@@ -38,7 +38,7 @@ graph TD
 ```
 
 架构依赖核心原则：
-- **单向依赖规约**：切片根目录服务层承载业务规则，严禁反向 import 自身的 `v1/` 传输层；`client` 与 `admin` 特性之间互不依赖。
+- **单向依赖规约**：切片根目录服务层承载业务规则，传输层（`handler`/`router`）可调用服务层，严禁反向调用；`client` 与 `admin` 特性之间互不依赖。
 - **分层职责隔离**：Handler 仅负责参数提取、校验调度与成功响应信封；业务事务完全收敛于 Service；DTO 仅承载契约与校验标签。
 - **跨模块内核沉淀**：跨切片共享模型统一收敛于 `internal/user/`，媒体底层抽象收敛于 `pkg/media/`。
 
@@ -63,10 +63,10 @@ graph TD
 
 2. **开发模式运行**：
    ```bash
-   # 并行热重载 API 与 Worker（带 process-compose TUI 面板）
+   # 并行热重载 API 与 Worker（带 dekit TUI 面板）
    just dev
 
-   # 纯终端流式日志输出（无 TUI）
+   # 后台启动，日志用 dekit attach api|worker 查看
    just dev-stream
    ```
 
@@ -134,7 +134,7 @@ just docs               # 自动化更新 OpenAPI 文档
 
 ## Coding Standards
 
-- **禁止跨切片反向引用**：特性服务层严禁反向依赖自身 `v1/` 传输层；`client` 与 `admin` 切片严禁直接相互 import。
+- **禁止跨切片反向引用**：特性服务层严禁反向依赖自身传输层（`handler`/`router`）；`client` 与 `admin` 切片严禁直接相互 import。
 - **禁止 Handler 侵入业务**：Handler 统一以 `c.Bind().JSON(&body)` / `c.Bind().URI(&pathParams)` 处理参数，严禁直接在 Handler 编写业务逻辑或操作 SQL。
 - **禁止手工改动生成物**：`internal/database/sqlc` 与 `api/*.json` 必须由 `just sqlc` 和 `just docs` 离线生成。
 - **错误统一收敛**：业务异常统一使用 `samber/oops` 携带语义化业务错误码（`pkg/errs/code.go`），由全局错误中间件映射标准契约。

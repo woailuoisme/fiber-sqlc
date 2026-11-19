@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"cfiber/internal/database/sqlc"
-	{{ .ServicePackage }} "{{ .ServiceImportPath }}"
 	"cfiber/pkg/response"
 )
 
@@ -43,8 +42,8 @@ func (q *List{{ .PascalName }}QueryParams) Normalize() {
 }
 
 // ToFilter 转换为领域查询过滤参数。
-func (q *List{{ .PascalName }}QueryParams) ToFilter() {{ .ServicePackage }}.List{{ .PascalName }}Filter {
-	return {{ .ServicePackage }}.List{{ .PascalName }}Filter{
+func (q *List{{ .PascalName }}QueryParams) ToFilter() List{{ .PascalName }}Filter {
+	return List{{ .PascalName }}Filter{
 		Page:     q.Page,
 		PageSize: q.PageSize,
 		Search:   q.Search,
@@ -72,8 +71,8 @@ func (b *Create{{ .PascalName }}Body) Normalize() {
 }
 
 // ToParams 转换为领域创建参数。
-func (b *Create{{ .PascalName }}Body) ToParams() {{ .ServicePackage }}.Create{{ .PascalName }}Params {
-	return {{ .ServicePackage }}.Create{{ .PascalName }}Params{
+func (b *Create{{ .PascalName }}Body) ToParams() Create{{ .PascalName }}Params {
+	return Create{{ .PascalName }}Params{
 		Name:        b.Name,
 		Description: b.Description,
 		Status:      b.Status,
@@ -107,8 +106,8 @@ func (b *Update{{ .PascalName }}Body) Normalize() {
 }
 
 // ToParams 转换为领域更新参数。
-func (b *Update{{ .PascalName }}Body) ToParams() {{ .ServicePackage }}.Update{{ .PascalName }}Params {
-	return {{ .ServicePackage }}.Update{{ .PascalName }}Params{
+func (b *Update{{ .PascalName }}Body) ToParams() Update{{ .PascalName }}Params {
+	return Update{{ .PascalName }}Params{
 		Name:        b.Name,
 		Description: b.Description,
 		Status:      b.Status,
